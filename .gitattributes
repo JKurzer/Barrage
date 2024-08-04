@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+Content/** filter=lfs diff=lfs merge=lfs -text
+cmake** filter=lfs diff=lfs merge=lfs -text
