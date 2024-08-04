@@ -9,6 +9,7 @@ public class JoltExample : ModuleRules
 {
 	public JoltExample(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
