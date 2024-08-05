@@ -1,15 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "JoltExample.h"
+#include "Barrage.h"
 #include "JoltPhysicsTest.h"
 
 #include "Containers/Ticker.h"
 
-#define LOCTEXT_NAMESPACE "FJoltExampleModule"
+#define LOCTEXT_NAMESPACE "FBarrage"
 
 
 
-void FJoltExampleModule::StartupModule()
+void FBarrage::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	FTickerDelegate cb;
@@ -22,7 +22,7 @@ void FJoltExampleModule::StartupModule()
 	FTSTicker::GetCoreTicker().AddTicker(cb,2.0f);
 }
 
-void FJoltExampleModule::ShutdownModule()
+void FBarrage::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -30,4 +30,4 @@ void FJoltExampleModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FJoltExampleModule, JoltExample)
+IMPLEMENT_MODULE(FBarrage, Barrage)

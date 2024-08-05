@@ -5,9 +5,9 @@ using System.IO;
 using System.Xml.Linq;
 using UnrealBuildTool;
 
-public class JoltExample : ModuleRules
+public class Barrage : ModuleRules
 {
-	public JoltExample(ReadOnlyTargetRules Target) : base(Target)
+	public Barrage(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -109,6 +109,7 @@ public class JoltExample : ModuleRules
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
 			// this path is relative and can change a bit, adjust it according to your project structure. you need to point to library what is built by UE4CMake (*.lib / *.a)
+			// TODO: replace this. It's a huge maintenance hazard.
             libPath = Path.Combine(ModuleDirectory, "../../../../Intermediate/CMakeTarget/Jolt/build/Jolt/" + configType, "Jolt.lib");
         }
 
