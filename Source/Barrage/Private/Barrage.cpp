@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Barrage.h"
-#include "JoltPhysicsTest.h"
 
 #include "Containers/Ticker.h"
 
@@ -11,15 +10,9 @@
 
 void FBarrage::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	FTickerDelegate cb;
-
-	cb.BindLambda([this](float DeltaTime){
-		JoltPhysicsTest test;
-		printf("");
-		return true;
-	});
-	FTSTicker::GetCoreTicker().AddTicker(cb,2.0f);
+	// we have some stuff to be mindful of that makes isolating Barrage and the Barrage types a good idea, namely, packing pragmas.
+	// https://youtu.be/3OzPQOKFBQU?si=ebfPc14JuPraTvx5&t=81
+	// right now, I need to decide how much isolation I want.
 }
 
 void FBarrage::ShutdownModule()
