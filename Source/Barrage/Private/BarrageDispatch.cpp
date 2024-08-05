@@ -1,18 +1,17 @@
 #include "BarrageDispatch.h"
 
-
-
-
 PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
-
-
+#include "Jolt/Jolt.h"
+#include "Jolt/RegisterTypes.h"
+#include "Jolt/Core/Factory.h"
 #include "Jolt/Core/TempAllocator.h"
 #include "Jolt/Core/JobSystemThreadPool.h"
+#include "Jolt/Physics/PhysicsSettings.h"
+#include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Body/BodyActivationListener.h"
-
 
 #include "Jolt/ConfigurationString.h"
 
@@ -38,8 +37,6 @@ using namespace JPH::literals;
 // We're also using STL classes in this example
 using namespace std;
 
-namespace Barrage
-{
 	// Callback for traces, connect this to your own trace function if you have one
 	static void TraceImpl(const char* inFMT, ...)
 	{
@@ -277,6 +274,7 @@ namespace Barrage
 
 		// Now we can create the actual physics system.
 		
+		PhysicsSystem physics_system;
 		physics_system.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, broad_phase_layer_interface, object_vs_broadphase_layer_filter, object_vs_object_layer_filter);
 
 		// A body activation listener gets notified when bodies activate and go to sleep
@@ -387,4 +385,3 @@ namespace Barrage
 		Factory::sInstance = nullptr;
 		GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Green, TEXT("Goodnight, Barrage!"));
 	}
-}
