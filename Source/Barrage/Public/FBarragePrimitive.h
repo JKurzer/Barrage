@@ -6,8 +6,8 @@
 //by which I mean a little terrifying, because actually, this is just a shim.
 struct FBarragePrimitive
 {
-	FBShapeParams::FBShape Me;
-	FBarrageKey KeyIntoBarrage;
+	//you cannot safely reorder these or it will change the pack width.
+	FBarrageKey KeyIntoBarrage; 
 	//This breaks our type dependency by using the underlying hashkey instead of the artillery type.
 	//this is pretty risky, but it's basically necessary to avoid a dependency on artillery until we factor our types
 	//into a type plugin, which is a wild but not unexpected thing to do.
@@ -15,7 +15,8 @@ struct FBarragePrimitive
 
 	//this can store the mID underlying the Jolt Body Id, allowing us to break the type dependency and preserve
 	//the TLU boundary.
-	uint32 inID;
+	uint32 inID; //4b 
+	FBShapeParams::FBShape Me; //4b
 };
 typedef FBarragePrimitive FBShapelet;
 typedef FBShapelet FBlet;

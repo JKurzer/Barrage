@@ -337,7 +337,7 @@
 				ShapeSettings::ShapeResult box = box_settings.Create();
 				ShapeRefC box_shape = box.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
 				// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-				BodyCreationSettings floor_settings(box_shape, RVec3(ToCreate.Point.Component(0),ToCreate.Point.Component(1), ToCreate.Point.Component(3)), Quat::sIdentity(), MovementType, ToCreate.layer);
+				BodyCreationSettings floor_settings(box_shape, RVec3(ToCreate.pointx,ToCreate.pointy, ToCreate.pointz), Quat::sIdentity(), MovementType, ToCreate.layer);
 				// Create the actual rigid body
 				Body* floor = body_interface->CreateBody(floor_settings); // Note that if we run out of bodies this can return nullptr
 
