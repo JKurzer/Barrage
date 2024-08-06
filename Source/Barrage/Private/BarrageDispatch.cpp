@@ -27,16 +27,28 @@ UBarrageDispatch::UBarrageDispatch()
 
 	}
 
-void UBarrageDispatch::SphereCast()
+void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, double FinalRadius, uint64_t timestamp)
 {
 }
 
-FBarrageKey UBarrageDispatch::CreateSimPrimitive()
+FBarrageKey UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition)
 {
+	
 	return FBarrageKey();
 }
+
+TSharedPtr<FBlet> UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
+{
+	return TSharedPtr<FBlet>();
+}
+
 
 TStatId UBarrageDispatch::GetStatId() const
 {
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UBarrageDispatch, STATGROUP_Tickables);
+}
+
+void UBarrageDispatch::StepWorld()
+{
+	JoltGameSim->StepSimulation();
 }
