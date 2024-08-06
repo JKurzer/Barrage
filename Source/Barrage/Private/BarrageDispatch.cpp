@@ -1,5 +1,7 @@
 #include "BarrageDispatch.h"
 
+#include "FWorldSimOwner.h"
+
 
 UBarrageDispatch::UBarrageDispatch()
 {
@@ -16,6 +18,7 @@ UBarrageDispatch::UBarrageDispatch()
 	void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 	{
 		Super::OnWorldBeginPlay(InWorld);
+		JoltGameSim = MakeShareable(new FWorldSimOwner(TickRateInDelta));
 	}
 
 	void UBarrageDispatch::Deinitialize()

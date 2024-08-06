@@ -3,8 +3,7 @@
 //unity build isn't fond of this, but we really want to completely contain these types and also prevent any collisions.
 //there's other ways to do this, but the correct way is a namespace so far as I know.
 // see: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.4#namespaces
-namespace Barrage
-{
+
 	PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Jolt.h"
 #include "Jolt/RegisterTypes.h"
@@ -17,29 +16,19 @@ namespace Barrage
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Body/BodyActivationListener.h"
-
 #include "Jolt/ConfigurationString.h"
-
 	PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 	// STL includes
 #include <iostream>
 #include <cstdarg>
 #include <thread>
+#include <math.h>
+	// All Jolt symbols are in the JPH namespace
+
 
 	// Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
 	JPH_SUPPRESS_WARNINGS
-
-#ifdef JPH_ENABLE_ASSERTS
-
-	// Callback for asserts, connect this to your own assert handler if you have one
-	static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine)
-	{
-
-		// Breakpoint
-		return true;
-	};
-
 	// Callback for traces, connect this to your own trace function if you have one
 	static void TraceImpl(const char* inFMT, ...)
 	{
@@ -49,11 +38,8 @@ namespace Barrage
 		char buffer[1024];
 		vsnprintf(buffer, sizeof(buffer), inFMT, list);
 		va_end(list);
-
 	}
-#endif // JPH_ENABLE_ASSERTS
 
-	// All Jolt symbols are in the JPH namespace
 	using namespace JPH;
 
 	// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
@@ -61,7 +47,19 @@ namespace Barrage
 
 	// We're also using STL classes in this example
 	using namespace std;
-	
+#ifdef JPH_ENABLE_ASSERTS
+
+	// Callback for asserts, connect this to your own assert handler if you have one
+	static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine)
+	{
+		// Breakpoint
+		return true;
+	};
+
+
+#endif // JPH_ENABLE_ASSERTS
+
+
 	// Layer that objects can be in, determines which other objects it can collide with
 	// Typically you at least want to have 1 layer for moving bodies and 1 layer for static bodies, but you can have more
 	// layers if you want. E.g. you could have a layer for high detail collision (which is not used by the physics simulation
@@ -131,10 +129,10 @@ namespace Barrage
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
 			virtual const char* GetBroadPhaseLayerName(BroadPhaseLayer inLayer) const override
 			{
-				switch ((BroadPhaseLayer::Type)inLayer)
+				switch (static_cast<BroadPhaseLayer::Type>(inLayer))
 				{
-				case (BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING: return "NON_MOVING";
-				case (BroadPhaseLayer::Type)BroadPhaseLayers::MOVING: return "MOVING";
+				case static_cast<BroadPhaseLayer::Type>(BroadPhaseLayers::NON_MOVING): return "NON_MOVING";
+				case static_cast<BroadPhaseLayer::Type>(BroadPhaseLayers::MOVING): return "MOVING";
 				default: JPH_ASSERT(false);
 					return "INVALID";
 				}
@@ -172,7 +170,6 @@ namespace Barrage
 			virtual ValidateResult OnContactValidate(const Body& inBody1, const Body& inBody2, RVec3Arg inBaseOffset,
 			                                         const CollideShapeResult& inCollisionResult) override
 			{
-
 				// Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
 				return ValidateResult::AcceptAllContactsForThisBodyPair;
 			}
@@ -180,18 +177,15 @@ namespace Barrage
 			virtual void OnContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
 			                            ContactSettings& ioSettings) override
 			{
-				
 			}
 
 			virtual void OnContactPersisted(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
 			                                ContactSettings& ioSettings) override
 			{
-				
 			}
 
 			virtual void OnContactRemoved(const SubShapeIDPair& inSubShapePair) override
 			{
-				
 			}
 		};
 
@@ -201,18 +195,16 @@ namespace Barrage
 		public:
 			virtual void OnBodyActivated(const BodyID& inBodyID, uint64 inBodyUserData) override
 			{
-				
 			}
 
 			virtual void OnBodyDeactivated(const BodyID& inBodyID, uint64 inBodyUserData) override
 			{
-				
 			}
 		};
-		
+
 	public:
 		PhysicsSystem physics_system;
-		
+
 		TSharedPtr<JobSystemThreadPool> job_system;
 		// Create mapping table from object layer to broadphase layer
 		// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
@@ -236,8 +228,8 @@ namespace Barrage
 		// Note that this is called from a job so whatever you do here needs to be thread safe.
 		// Registering one is entirely optional.
 		MyBodyActivationListener body_activation_listener;
-		
-		float DeltaTime = 0.01;//You should set this!
+
+		float DeltaTime = 0.01; //You should set this!
 
 		BodyInterface* body_interface;
 
@@ -258,7 +250,10 @@ namespace Barrage
 		// number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
 		// Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
 		const uint cMaxContactConstraints = 1024;
-		
+
+
+		TSharedPtr<TempAllocatorImpl> temp_allocator;
+
 		FWorldSimOwner(float cDeltaTime)
 		{
 			DeltaTime = cDeltaTime;
@@ -266,6 +261,7 @@ namespace Barrage
 			// This needs to be done before any other Jolt function is called.
 			RegisterDefaultAllocator();
 
+			temp_allocator = MakeShareable(new TempAllocatorImpl(10 * 1024 * 1024));
 			// Install trace and assert callbacks
 			Trace = TraceImpl;
 			JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;)
@@ -284,18 +280,19 @@ namespace Barrage
 			// B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
 			// If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
 			// malloc / free.
-			
+
 
 			// We need a job system that will execute physics jobs on multiple threads. Typically
 			// you would implement the JobSystem interface yourself and let Jolt Physics run on top
 			// of your own job scheduler. JobSystemThreadPool is an example implementation.
-			job_system = MakeShareable(new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1));
+			job_system = MakeShareable(
+				new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1));
 			// Now we can create the actual physics system.
 			physics_system.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints,
 			                    broad_phase_layer_interface, object_vs_broadphase_layer_filter,
 			                    object_vs_object_layer_filter);
 
-			
+
 			physics_system.SetBodyActivationListener(&body_activation_listener);
 
 
@@ -304,6 +301,13 @@ namespace Barrage
 			// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
 			// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
 			body_interface = &physics_system.GetBodyInterface();
+
+
+			// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
+			// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
+			// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
+			physics_system.OptimizeBroadPhase();
+
 
 			// Next we can create a rigid body to serve as the floor, we make a large box
 			// Create the settings for the collision volume (the shape).
@@ -339,8 +343,6 @@ namespace Barrage
 			//body_interface.SetLinearVelocity(sphere_id, Vec3(0.0f, -5.0f, 0.0f));
 
 			// We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
-			
-
 
 
 			// Remove the sphere from the physics system. Note that the sphere itself keeps all of its state and can be re-added at any time.
@@ -354,32 +356,27 @@ namespace Barrage
 			// body_interface.DestroyBody(floor->GetID());
 
 			// Unregisters all types with the factory and cleans up the default material
-
 		}
 
+		//This'll be trouble.
+		//https://www.youtube.com/watch?v=KKC3VePrBOY&lc=Ugw9YRxHjcywQKH5LO54AaABAg
 		void StepSimulation()
 		{
-			// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
-			// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
-			// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-			physics_system.OptimizeBroadPhase();
-
-
 			// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
-			const int cCollisionSteps = 1;
+			constexpr int cCollisionSteps = 1;
 
 			// Step the world
-			physics_system.Update(DeltaTime, cCollisionSteps, &temp_allocator, &job_system);
+			physics_system.Update(DeltaTime, cCollisionSteps, temp_allocator.Get(), job_system.Get());
 		}
-		
+
 		~FWorldSimOwner()
 		{
 			UnregisterTypes();
-    
+
 			// Destroy the factory
 			delete Factory::sInstance;
 			Factory::sInstance = nullptr;
 			GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Green, TEXT("Goodnight, Barrage!"));
 		}
 	};
-}
+
