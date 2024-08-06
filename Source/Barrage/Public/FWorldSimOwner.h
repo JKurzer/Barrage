@@ -3,7 +3,7 @@
 //unity build isn't fond of this, but we really want to completely contain these types and also prevent any collisions.
 //there's other ways to do this, but the correct way is a namespace so far as I know.
 // see: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.4#namespaces
-
+#include "FBarrageKey.h"
 	PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Jolt.h"
 #include "Jolt/RegisterTypes.h"
@@ -203,6 +203,7 @@
 		};
 
 	public:
+		TSharedPtr< TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
 		PhysicsSystem physics_system;
 
 		TSharedPtr<JobSystemThreadPool> job_system;
@@ -259,6 +260,7 @@
 			DeltaTime = cDeltaTime;
 			// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
 			// This needs to be done before any other Jolt function is called.
+			BarrageToJoltMapping = MakeShareable(new TMap<FBarrageKey, BodyID>());
 			RegisterDefaultAllocator();
 
 			temp_allocator = MakeShareable(new TempAllocatorImpl(10 * 1024 * 1024));
