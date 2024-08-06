@@ -348,7 +348,7 @@
 			else if(ToCreate.MyShape == ToCreate.Sphere)
 			{
 				BodyCreationSettings sphere_settings(new SphereShape(ToCreate.bound1),
-					RVec3(ToCreate.Point.Component(0),ToCreate.Point.Component(1), ToCreate.Point.Component(3)),
+					RVec3(ToCreate.pointx,ToCreate.pointy, ToCreate.pointz),
 					Quat::sIdentity(),
 					MovementType,
 					ToCreate.layer);
