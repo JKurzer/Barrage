@@ -32,7 +32,9 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, double Fina
 
 FBarrageKey UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition)
 {
-	
+	//we ALWAYS want to use 	Body *						CreateBodyWithID(const BodyID &inBodyID, const BodyCreationSettings &inSettings);
+	//and where at all possible, we should allocate all shapes at the start of play in a deterministic order. doing anything else is very very risky
+	//but I can't see a way around some amount of shape creation at runtime. we'll cross that bridge soon.
 	return FBarrageKey();
 }
 
