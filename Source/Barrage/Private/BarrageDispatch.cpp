@@ -27,6 +27,15 @@ UBarrageDispatch::UBarrageDispatch()
 
 	}
 
+void UBarrageDispatch::SphereCast()
+{
+}
+
+FBarrageKey UBarrageDispatch::CreateSimPrimitive()
+{
+	return FBarrageKey();
+}
+
 TStatId UBarrageDispatch::GetStatId() const
 {
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UBarrageDispatch, STATGROUP_Tickables);
