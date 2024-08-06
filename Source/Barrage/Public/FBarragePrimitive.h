@@ -11,7 +11,11 @@ struct FBarragePrimitive
 	//This breaks our type dependency by using the underlying hashkey instead of the artillery type.
 	//this is pretty risky, but it's basically necessary to avoid a dependency on artillery until we factor our types
 	//into a type plugin, which is a wild but not unexpected thing to do.
-	uint64_t KeyOutOfBarrage; 
+	uint64_t KeyOutOfBarrage;
+
+	//this can store the mID underlying the Jolt Body Id, allowing us to break the type dependency and preserve
+	//the TLU boundary.
+	uint32 inID;
 };
 typedef FBarragePrimitive FBShapelet;
 typedef FBShapelet FBlet;
