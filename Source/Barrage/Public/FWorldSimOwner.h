@@ -24,6 +24,7 @@
 #include <cstdarg>
 #include <thread>
 #include <math.h>
+#include "FBShapeParams.h"
 	// All Jolt symbols are in the JPH namespace
 
 
@@ -203,6 +204,7 @@
 		};
 
 	public:
+		//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
 		TSharedPtr< TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
 		PhysicsSystem physics_system;
 
@@ -314,6 +316,62 @@
 		//	https://youtu.be/jhCupKFly_M?si=umi0zvJer8NymGzX&t=438
 		}
 
+		//we could use type indirection or inheritance, but the fact of the matter is that this is much easier
+		//to understand and vastly vastly faster. it's also easier to optimize out allocations, and it's very
+		//very easy to read for people who are probably already drowning in new types.
+		//finally, it allows FBShapeParams to be a POD and so we can reason about it really easily.
+		FBarrageKey CreatePrimitive(FBShapeParams& ToCreate)
+		{
+			uint64_t KeyCompose;
+			KeyCompose = PointerHash(this);
+			KeyCompose = KeyCompose << 32;
+			BodyID BodyIDTemp = BodyID();
+			EMotionType MovementType = ToCreate.layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
+
+			//prolly convert this to a case once it's settled.
+			if(ToCreate.MyShape == ToCreate.Box)
+			{
+				BoxShapeSettings box_settings(Vec3(ToCreate.bound1, ToCreate.bound2, ToCreate.bound3));
+				//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
+				// Create the shape
+				ShapeSettings::ShapeResult box = box_settings.Create();
+				ShapeRefC box_shape = box.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
+				// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
+				BodyCreationSettings floor_settings(box_shape, RVec3(ToCreate.Point.Component(0),ToCreate.Point.Component(1), ToCreate.Point.Component(3)), Quat::sIdentity(), MovementType, ToCreate.layer);
+				// Create the actual rigid body
+				Body* floor = body_interface->CreateBody(floor_settings); // Note that if we run out of bodies this can return nullptr
+
+				// Add it to the world
+				body_interface->AddBody(floor->GetID(), EActivation::DontActivate);
+				BodyIDTemp = floor->GetID();
+			}
+			else if(ToCreate.MyShape == ToCreate.Sphere)
+			{
+				BodyCreationSettings sphere_settings(new SphereShape(ToCreate.bound1),
+					RVec3(ToCreate.Point.Component(0),ToCreate.Point.Component(1), ToCreate.Point.Component(3)),
+					Quat::sIdentity(),
+					MovementType,
+					ToCreate.layer);
+				BodyIDTemp = body_interface->CreateAndAddBody(sphere_settings, EActivation::Activate);
+			}
+			else if(ToCreate.MyShape == ToCreate.Capsule)
+			{
+				throw; //we don't support capsule yet.
+			}
+			else
+			{
+				throw; // we don't support any others.
+			}
+			// Now create a dynamic body to bounce on the floor
+			// Note that this uses the shorthand version of creating and adding a body to the world
+			
+			KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
+			//Barrage key is unique to WORLD and BODY. This is crushingly important.
+			BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
+
+			return static_cast<FBarrageKey>(KeyCompose);
+		}
+
 		//This'll be trouble.
 		//https://www.youtube.com/watch?v=KKC3VePrBOY&lc=Ugw9YRxHjcywQKH5LO54AaABAg
 		void StepSimulation()
@@ -323,6 +381,17 @@
 
 			// Step the world
 			physics_system.Update(DeltaTime, cCollisionSteps, temp_allocator.Get(), job_system.Get());
+		}
+
+		//Broad Phase is the first pass in the engine's cycle, and the optimization used to accelerate it breaks down as objects are added. As a result, when you have time after adding objects,
+		//you should call optimize broad phase. You should also batch object creation whenever possible, but we don't support that well yet.
+		//Generally, as we add and remove objects, we'll want to perform this, but we really don't want to run it every tick. We can either use trigger logic or a cadenced ticklite
+		void OptimizeBroadPhase()
+		{
+			// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
+			// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
+			// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
+			physics_system.OptimizeBroadPhase();
 		}
 
 		~FWorldSimOwner()

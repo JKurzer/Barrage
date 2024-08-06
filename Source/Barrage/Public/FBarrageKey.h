@@ -4,4 +4,12 @@
 struct FBarrageKey
 {
 	uint64_t KeyIntoBarrage;
+	friend uint32 GetTypeHash(const FBarrageKey& Other)
+	{
+		// it's probably fine!
+		return GetTypeHash(Other.KeyIntoBarrage);
+	}
 };
+static bool operator==(FBarrageKey const& lhs, FBarrageKey const& rhs) {
+	return (lhs.KeyIntoBarrage == rhs.KeyIntoBarrage);
+}
