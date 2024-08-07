@@ -109,15 +109,14 @@ public:
 		void CleanTombs()
 		{
 			//free tomb at offset - TombstoneInitialMinimum, fulfilling our promised minimum.
-			//TODO: someone check my math. I hate negative mods.
-			Tombs[(TombOffset - TombstoneInitialMinimum) % (TombstoneInitialMinimum+1)]->Empty();
+			Tombs[(TombOffset - TombstoneInitialMinimum) % (TombstoneInitialMinimum+1)]->Empty(); //roast 'em lmao.
 			TombOffset = (TombOffset + 1) % (TombstoneInitialMinimum+1);
 		}
 
 		void Entomb(FBLet NONREFERENCE)
 		{
 			//request removal here
-			MasterRecordForLifecycle->FindAndRemoveChecked(NONREFERENCE->KeyIntoBarrage);
+			MasterRecordForLifecycle->Remove(NONREFERENCE->KeyIntoBarrage); // there doesn't seem to be a better way to do this idiomatically in the UE framework.
 			//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe,
 			Tombs[TombOffset]->Push(NONREFERENCE);
 			//DO NOT make K a reference parameter
