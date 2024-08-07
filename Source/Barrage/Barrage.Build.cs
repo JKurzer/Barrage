@@ -31,7 +31,7 @@ public class Barrage : ModuleRules
 			new string[]
 			{
 				"Core",
-				"JoltPhysics" // <- add jolt dependecy here
+				"JoltPhysics", "GeometryCore" // <- add jolt dependecy here
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

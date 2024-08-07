@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "CapsuleTypes.h"
 
 
 //Hey, so you might notice that this is exactly 56 bytes and ordered oddly.
@@ -36,3 +37,27 @@ struct FBShapeParams
 //this should evaluate in most IDEs, allowing you to see the size if you need to make changes. try not to need to.
 //constexpr const static int size = sizeof(FBShapeParams);
 //#pragma pack(pop) //uncomment along with the push pragma or you'll have a very funny but very bad time
+
+class FBarrageBounder
+{
+	//convert from UE to Jolt without exposing the jolt types.
+	static FBShapeParams GenerateBoxBounds(	double pointx, double pointy, double pointz, double xHalfEx, double yHalfEx, double zHalfEx)
+	{
+		return FBShapeParams();
+	}
+	//transform the quaternion from the UE ref to the Jolt ref
+	//then apply it to the "primitive"
+	static FBShapeParams GenerateSphereBounds(double pointx, double pointy, double pointz, double radius)
+	{
+		return FBShapeParams();
+	}
+
+	//as the barrage primitive contains both the in and out keys, that is sufficient to act as a full mapping
+	//IFF you can supply the dispatch provider that owns the out key. this is done as a template arg
+	static FBShapeParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
+	{
+		return FBShapeParams();
+	}
+
+	
+};
