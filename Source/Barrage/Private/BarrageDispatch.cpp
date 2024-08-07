@@ -41,10 +41,10 @@ FBarrageKey UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition)
 
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
 //this is because we may have _many_ jolt sims running if we choose to do deterministic rollback in certain ways.
-TSharedPtr<FBLet> UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
+FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
 {
 	//JoltGameSim->BarrageToJoltMapping->FindChecked(Existing);
-	return TSharedPtr<FBLet>();
+	return FBLet();
 }
 
 

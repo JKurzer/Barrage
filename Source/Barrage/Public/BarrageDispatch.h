@@ -27,6 +27,11 @@
 		FBarrageKey CreateSimPrimitive(FBShapeParams& Definition);
 		FBLet GetShapeRef(FBarrageKey Existing);
 
+		//any non-zero value is the same, effectively, as a nullity for the purposes of any new operation.
+		//because we can't control certain aspects of timing and because we may need to roll back, we use tombstoning
+		//instead of just reference counting and deleting - this is because cases arise where there MUST be an authoritative
+		//single source answer to the alive/dead question for a rigid body, but we still want all the advantages of ref counting
+		//and we want to be able to revert that decision for faster rollbacks or for pooling purposes.
 		constexpr static uint32 TombstoneInitialMinimum = 10;
 		uint32 SuggestTombstone(const FBLet& Target, uint32 Tombstone = TombstoneInitialMinimum)
 		{
