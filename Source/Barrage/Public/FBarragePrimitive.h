@@ -24,21 +24,22 @@ struct FBarragePrimitive
 	FBShapeParams::FBShape Me; //4b
 };
 typedef FBarragePrimitive FBShapelet;
-typedef FBShapelet FBLet;
+typedef TSharedPtr<FBShapelet> FBLet;
 
 //Note the use of shared pointers. Due to tombstoning, FBlets must always be used by reference.
 //this is actually why they're called FBLets, as they're rented (or let) shapes that are also thus both shapelets and shape-lets.
-class FBarrageTransformer
+class FBLetter
 {
+public:
 	//transform forces transparently from UE world space to jolt world space
 	//then apply them directly to the "primitive"
-	static void ApplyForce(FVector3d Force, TSharedPtr<FBLet> Target)
+	static void ApplyForce(FVector3d Force, FBLet Target)
 	{
 		
 	}
 	//transform the quaternion from the UE ref to the Jolt ref
 	//then apply it to the "primitive"
-	static void ApplyRotation(FQuat4d Rotator, TSharedPtr<FBLet>  Target)
+	static void ApplyRotation(FQuat4d Rotator, FBLet  Target)
 	{
 		
 	}
@@ -46,7 +47,7 @@ class FBarrageTransformer
 	//as the barrage primitive contains both the in and out keys, that is sufficient to act as a full mapping
 	//IFF you can supply the dispatch provider that owns the out key. this is done as a template arg
 	template <typename OutKeyDispatch>
-	static void PublishTransformFromJolt(TSharedPtr<FBLet>  Target)
+	static void PublishTransformFromJolt(FBLet  Target)
 	{
 		
 	}
@@ -56,7 +57,7 @@ class FBarrageTransformer
 	//the tombstone period is effectively a grace period due to the fact that we have quite a lot of different
 	//timings in play. it should be largely unnecessary, but it's also a very useful semantic for any pooled
 	//data and allows us to batch disposal nicely.
-	static inline bool IsNotNull(TSharedPtr<FBarragePrimitive> Target)
+	static inline bool IsNotNull(FBLet Target)
 	{
 		return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
 	}

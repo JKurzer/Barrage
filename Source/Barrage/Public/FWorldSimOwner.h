@@ -381,6 +381,8 @@
 
 			// Step the world
 			physics_system.Update(DeltaTime, cCollisionSteps, temp_allocator.Get(), job_system.Get());
+
+			//TODO: tombstone handling
 		}
 
 		//Broad Phase is the first pass in the engine's cycle, and the optimization used to accelerate it breaks down as objects are added. As a result, when you have time after adding objects,
