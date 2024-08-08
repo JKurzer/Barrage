@@ -1,45 +1,45 @@
 #include "BarrageDispatch.h"
 #include "FWorldSimOwner.h"
 
-	UBarrageDispatch::UBarrageDispatch()
-	{
-		
-		
-		
-	}
 
-	UBarrageDispatch::~UBarrageDispatch() {
+
+
+UBarrageDispatch::UBarrageDispatch()
+{
+}
+
+UBarrageDispatch::~UBarrageDispatch()
+{
 	//now that all primitives are destructed
 	GlobalBarrage = nullptr;
-	}
+}
 
-	void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
+void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	for (auto& x : Tombs)
 	{
-		Super::Initialize(Collection);
-		for(auto& x : Tombs)
-		{
-			x = MakeShareable(new TArray<FBLet>());
-		}
+		x = MakeShareable(new TArray<FBLet>());
+	}
 	GlobalBarrage = this;
-	}
+}
 
-	void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
+void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+	JoltGameSim = MakeShareable(new FWorldSimOwner(TickRateInDelta));
+	MasterRecordForLifecycle = MakeShareable(new TMap<FBarrageKey, FBLet>());
+}
+
+void UBarrageDispatch::Deinitialize()
+{
+	Super::Deinitialize();
+	MasterRecordForLifecycle = nullptr;
+	for (auto& x : Tombs)
 	{
-		Super::OnWorldBeginPlay(InWorld);
-		JoltGameSim = MakeShareable(new FWorldSimOwner(TickRateInDelta));
-		MasterRecordForLifecycle = MakeShareable(new TMap<FBarrageKey, FBLet>());
+		x = nullptr;
 	}
-
-	void UBarrageDispatch::Deinitialize()
-	{
-		Super::Deinitialize();
-		MasterRecordForLifecycle = nullptr;
-		for(auto& x : Tombs)
-		{
-			x = nullptr;
-		}
-
-	}
+}
 
 void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp)
 {
@@ -61,9 +61,12 @@ FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 Out
 //This is a copy by value return on purpose, as we want the ref count to rise.
 FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
 {
-		//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
-		return MasterRecordForLifecycle->FindRef(Existing);
-
+	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
+	//if entomb gets sliced, the tombstone check will fail as long as it is performed within 27 milliseconds of this call.
+	//as a result, one of two states will arise: you get a null pointer, or you get a valid shared pointer
+	//which will hold the asset open until you're done, but the tombstone markings will be set, letting you know
+	//that this thoroughfare? it leads into the region of peril.
+	return MasterRecordForLifecycle->FindRef(Existing);
 }
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
@@ -82,4 +85,20 @@ void UBarrageDispatch::StepWorld()
 	JoltGameSim->StepSimulation();
 	//maintain tombstones
 	CleanTombs();
+}
+
+FBShapeParams FBarrageBounder::GenerateBoxBounds(double pointx, double pointy, double pointz, double xHalfEx,
+	double yHalfEx, double zHalfEx)
+{
+	return FBShapeParams();
+}
+
+FBShapeParams FBarrageBounder::GenerateSphereBounds(double pointx, double pointy, double pointz, double radius)
+{
+	return FBShapeParams();
+}
+
+FBShapeParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
+{
+	return FBShapeParams();
 }
