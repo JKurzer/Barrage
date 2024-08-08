@@ -41,6 +41,28 @@ void UBarrageDispatch::Deinitialize()
 	}
 }
 
+//TODO: these will all need reworked for determinism.
+FVector3d UBarrageDispatch::ToJoltCoordinates(FVector3d In)
+{
+	return FVector3d(In.X/100.0, In.Z/100.0, In.Y/100.0); //reverse is 0,2,1
+}
+
+FVector3d UBarrageDispatch::FromJoltCoordinates(FVector3d In)
+{
+	return FVector3d(In.X*100.0, In.Z*100.0, In.Y*100.0); // this looks _wrong_.
+}
+
+//These should be fine.
+FQuat4d UBarrageDispatch::ToJoltRotation(FQuat4d In)
+{
+	return FQuat4d(-In.X, -In.Z, -In.Y, In.W);
+}
+FQuat4d UBarrageDispatch::FromJoltRotation(FQuat4d In)
+{
+	return FQuat4d(-In.X, -In.Z, -In.Y, In.W); 
+}
+
+
 void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp)
 {
 }
