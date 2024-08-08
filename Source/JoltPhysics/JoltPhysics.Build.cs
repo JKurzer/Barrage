@@ -18,7 +18,6 @@ public class JoltPhysics : ModuleRules
             cmakeOptions += " -DCMAKE_BUILD_TYPE=Debug ";
             cmakeOptions += " -DUSE_ASSERTS=ON ";
             cmakeOptions += " -DGENERATE_DEBUG_SYMBOLS=ON ";
-            cmakeOptions += " -DOVERRIDE_CXX_FLAGS=OFF "; // probably may be omitted
             cmakeOptions += " -DCMAKE_CXX_FLAGS_RELEASE=\" /GS /Od /Ob0 /RTC1\" "; // probably may be omitted
             cmakeOptions += " -DDEBUG_RENDERER=ON ";
             cmakeOptions += " -DPROFILE_ENABLED=ON ";
@@ -29,7 +28,6 @@ public class JoltPhysics : ModuleRules
             cmakeOptions += " -DCMAKE_BUILD_TYPE=Release ";
             cmakeOptions += " -DUSE_ASSERTS=ON ";
             cmakeOptions += " -DGENERATE_DEBUG_SYMBOLS=ON ";
-            cmakeOptions += " -DOVERRIDE_CXX_FLAGS=OFF "; // probably may be omitted
             cmakeOptions += " -DCMAKE_CXX_FLAGS_RELEASE=\" /GS /Od /Ob0 /RTC1\" "; // probably may be omitted
             cmakeOptions += " -DDEBUG_RENDERER=ON ";
             cmakeOptions += " -DPROFILE_ENABLED=ON ";
@@ -85,7 +83,8 @@ public class JoltPhysics : ModuleRules
         cmakeOptions += " -DUSE_LZCNT=" + simdStatus;
         cmakeOptions += " -DUSE_TZCNT=" + simdStatus;
         cmakeOptions += " -DUSE_F16C=" + simdStatus;
-
+        cmakeOptions += " -G -DCMAKE_CXX_COMPILER=\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe\" ";
+        cmakeOptions += " -DCMAKE_CXX_LINK_EXECUTABLE=\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe\" ";
 
         // use the UE4CMake plugin to generate project files https://github.com/caseymcc/UE4CMake read the instructions how to use it, it's straight forward.
         CMakeTarget.add(Target, this, "Jolt", Path.Combine(this.ModuleDirectory, "Build"), cmakeOptions, false);

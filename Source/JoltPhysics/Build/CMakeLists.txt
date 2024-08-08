@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
+
 project(JoltPhysics CXX)
 
 # When turning this option on, the library will be compiled using assertions. By default asserts are enabled in Debug build.
