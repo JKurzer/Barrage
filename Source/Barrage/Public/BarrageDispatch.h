@@ -69,6 +69,7 @@ public:
 	static FQuat4d FromJoltRotation(FQuat4d In);
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	FBLet CreateSimPrimitive(FBShapeParams& Definition, uint64 Outkey);
+	FBLet LoadStaticMesh(FBShapeParams& Definition, uint64 Outkey);
 	FBLet GetShapeRef(FBarrageKey Existing);
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 

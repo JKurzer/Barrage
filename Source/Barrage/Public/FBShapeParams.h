@@ -19,7 +19,8 @@ struct FBShapeParams
 	{
 		Capsule,
 		Box,
-		Sphere
+		Sphere,
+		Static
 	};
 
 	//All shapes can be defined using just these bounds. actually, this is more than you need for a sphere but hey

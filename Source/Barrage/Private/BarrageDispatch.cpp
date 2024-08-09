@@ -78,6 +78,11 @@ FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 Out
 	return indirect;
 }
 
+FBLet UBarrageDispatch::LoadStaticMesh(FBShapeParams& Definition, uint64 Outkey)
+{
+	return FBLet();
+}
+
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
 //this is because we may have _many_ jolt sims running if we choose to do deterministic rollback in certain ways.
 //This is a copy by value return on purpose, as we want the ref count to rise.
