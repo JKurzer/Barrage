@@ -1,7 +1,7 @@
 
 # install
 ### You MUST install CMake to use this plugin.
-A CMAKE installer is provided for the sake of your sanity and mine. Any modern CMake should be fine, but I don't recommend anything below 3.27.
+A CMAKE installer is provided for the sake of your sanity and mine. Any modern CMake should be fine, but I don't recommend anything below 3.27. It also requires UE4CMake, of which I host a slightly modified repo that is known-working with this build. Please note, the compiler version is pinned intentionally, so you may need to install a specific tool chain.
 
 ### IL Mismatch error 
 You may hit an issue where an IL mismatch occurs. If this happens, let me know, and we'll compare environments. this arises when cmake and UE's build system use different toolchain components or when CMake uses one linker and another compiler.
