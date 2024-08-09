@@ -1,7 +1,12 @@
 #include "BarrageDispatch.h"
 #include "FWorldSimOwner.h"
+#include "Chaos/TriangleMeshImplicitObject.h"
+#include "Chaos/TriangleMesh.h"
+#include "PhysicsEngine/BodySetup.h"
+#include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
 
-
+//https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
+//this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
 
 
 UBarrageDispatch::UBarrageDispatch()
@@ -78,8 +83,105 @@ FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 Out
 	return indirect;
 }
 
-FBLet UBarrageDispatch::LoadStaticMesh(FBShapeParams& Definition, uint64 Outkey)
+
+/*
+ *
+*if(!IsValidLowLevel()) return;
+if(!StaticMeshComponent) return;
+if(!StaticMeshComponent->StaticMesh) return;
+if(!StaticMeshComponent->StaticMesh->RenderData) return;
+
+if(StaticMeshComponent->StaticMesh->RenderData->LODResources.Num() > 0)
+{`
+FPositionVertexBuffer* VertexBuffer = &StaticMeshComponent->StaticMesh->RenderData->LODResources[0].PositionVertexBuffer;
+
+const FVector WorldSpaceVertexLocation = **GetActorLocation() + GetTransform().TransformVector(VertexBuffer->VertexPosition(Index));**
+
+*/
+
+//https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
+FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
+	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey)
 {
+	if(!StaticMeshComponent) return nullptr;
+	if(!StaticMeshComponent->GetStaticMesh()) return nullptr;
+	if(!StaticMeshComponent->GetStaticMesh()->GetRenderData()) return nullptr;
+	UBodySetup* body = StaticMeshComponent->GetStaticMesh()->GetBodySetup();
+	if(!body || body->CollisionTraceFlag != CTF_UseComplexAsSimple)
+	{
+		return nullptr; // we don't accept simple vs complex yet.
+	}
+
+	auto& complex = StaticMeshComponent->GetStaticMesh()->ComplexCollisionMesh;
+	auto collbody = complex->GetBodySetup();
+	if(collbody == nullptr)
+	{
+		return nullptr;
+	}
+
+
+	
+/*	JPH::TriangleList JoltTriangles;
+	JoltTriangles.reserve(tris.Num());
+
+	for( auto& Indices : tris)
+	{
+		JoltTriangles.push_back(Data.Particles().X(Indices[2]);
+		JoltTriangles.push_back(Data.Particles().X(Indices[1]);
+		JoltTriangles.push_back(Data.Particles().X(Indices[0]);
+		
+	}
+*/
+	/*
+	    case PhysCollision::TYPE_TRIMESH:
+    {
+      auto meshColl = static_cast<const PhysTriMeshCollision *>(c);
+      JPH::MeshShapeSettings shape;
+      shape.mTriangleVertices.resize(meshColl->vnum);
+      shape.mIndexedTriangles.resize(meshColl->inum / 3);
+      Point3 scl = meshColl->scale;
+      int vstride = meshColl->vstride;
+      bool rev_face = meshColl->revNorm;
+
+      if (meshColl->vtypeShort)
+      {
+        JPH::Float3 *d = shape.mTriangleVertices.data();
+        for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
+          d->x = ((uint16_t *)s)[0] * scl.x, d->y = ((uint16_t *)s)[1] * scl.y, d->z = ((uint16_t *)s)[2] * scl.z;
+      }
+      else
+      {
+        JPH::Float3 *d = shape.mTriangleVertices.data();
+        for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
+          d->x = ((float *)s)[0] * scl.x, d->y = ((float *)s)[1] * scl.y, d->z = ((float *)s)[2] * scl.z;
+      }
+      if (meshColl->istride == 2)
+      {
+        JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
+        for (auto s = (const unsigned short *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
+          d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
+      }
+      else
+      {
+        JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
+        for (auto s = (const unsigned *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
+          d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
+      }
+
+      auto res = shape.Create();
+      if (DAGOR_LIKELY(res.IsValid()))
+        return res.Get();
+
+      logerr("Failed to create non sanitized mesh shape <%s>: %s", meshColl->debugName, res.GetError().c_str());
+
+      decltype(shape) sanitizedShape;
+      sanitizedShape.mTriangleVertices = eastl::move(shape.mTriangleVertices);
+      sanitizedShape.mIndexedTriangles = eastl::move(shape.mIndexedTriangles);
+      sanitizedShape.Sanitize();
+      return check_and_return_shape(sanitizedShape.Create(), __LINE__);
+    }
+	*/
+	
 	return FBLet();
 }
 
