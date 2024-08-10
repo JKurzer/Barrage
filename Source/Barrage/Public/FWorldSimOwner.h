@@ -337,12 +337,12 @@
 				ShapeSettings::ShapeResult box = box_settings.Create();
 				ShapeRefC box_shape = box.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
 				// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-				BodyCreationSettings floor_settings(box_shape, RVec3(ToCreate.pointx,ToCreate.pointy, ToCreate.pointz), Quat::sIdentity(), MovementType, ToCreate.layer);
+				BodyCreationSettings box_body_settings(box_shape, RVec3(ToCreate.pointx,ToCreate.pointy, ToCreate.pointz), Quat::sIdentity(), MovementType, ToCreate.layer);
 				// Create the actual rigid body
-				Body* floor = body_interface->CreateBody(floor_settings); // Note that if we run out of bodies this can return nullptr
+				Body* box_body = body_interface->CreateBody(box_body_settings); // Note that if we run out of bodies this can return nullptr
 
 				// Add it to the world
-				body_interface->AddBody(floor->GetID(), EActivation::DontActivate);
+				body_interface->AddBody(box_body->GetID(), EActivation::Activate);
 				BodyIDTemp = floor->GetID();
 			}
 			else if(ToCreate.MyShape == ToCreate.Sphere)
@@ -360,10 +360,8 @@
 			}
 			else
 			{
-				throw; // we don't support any others.
+				throw; // static mesh is NOT a primitive type
 			}
-			// Now create a dynamic body to bounce on the floor
-			// Note that this uses the shorthand version of creating and adding a body to the world
 			
 			KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
 			//Barrage key is unique to WORLD and BODY. This is crushingly important.

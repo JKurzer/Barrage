@@ -63,13 +63,10 @@ public:
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 	virtual void Deinitialize() override;
 
-	static inline FVector3d ToJoltCoordinates(FVector3d In);
-	static inline FVector3d FromJoltCoordinates(FVector3d In);
-	static inline FQuat4d ToJoltRotation(FQuat4d In);
-	static inline FQuat4d FromJoltRotation(FQuat4d In);
+
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	FBLet CreateSimPrimitive(FBShapeParams& Definition, uint64 Outkey);
-	FBLet LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey InKey);
+	FBLet LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
 	FBLet GetShapeRef(FBarrageKey Existing);
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
@@ -130,25 +127,4 @@ private:
 	}
 };
 
-void FBLetter::ApplyRotation(FQuat4d Rotator, FBLet Target)
-{
-}
 
-template <typename OutKeyDispatch>
-void FBLetter::PublishTransformFromJolt(FBLet Target)
-{
-}
-
-FVector3d FBLetter::GetCentroidPossiblyStale(FBLet Target)
-{
-	return FVector3d();
-}
-
-bool FBLetter::IsNotNull(FBLet Target)
-{
-	return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
-}
-
-void FBLetter::ApplyForce(FVector3d Force, FBLet Target)
-{
-}

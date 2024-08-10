@@ -2,6 +2,8 @@
 #include "FWorldSimOwner.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Chaos/TriangleMesh.h"
+#include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
+#include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
@@ -85,20 +87,6 @@ FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 Out
 }
 
 
-/*
- *
-*if(!IsValidLowLevel()) return;
-if(!StaticMeshComponent) return;
-if(!StaticMeshComponent->StaticMesh) return;
-if(!StaticMeshComponent->StaticMesh->RenderData) return;
-
-if(StaticMeshComponent->StaticMesh->RenderData->LODResources.Num() > 0)
-{`
-FPositionVertexBuffer* VertexBuffer = &StaticMeshComponent->StaticMesh->RenderData->LODResources[0].PositionVertexBuffer;
-
-const FVector WorldSpaceVertexLocation = **GetActorLocation() + GetTransform().TransformVector(VertexBuffer->VertexPosition(Index));**
-
-*/
 
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
@@ -157,7 +145,7 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 	{
 		return nullptr;
 	}
-
+	//TODO: should we be holding the shape ref in gamesim owner?
 	auto& shape = err.Get();
 	BodyCreationSettings meshbody;
 	BodyCreationSettings creation_settings;
@@ -257,6 +245,8 @@ void UBarrageDispatch::StepWorld()
 	CleanTombs();
 }
 
+
+//BOUNDING BOX HELPER METHODS
 FBShapeParams FBarrageBounder::GenerateBoxBounds(double pointx, double pointy, double pointz, double xHalfEx,
 	double yHalfEx, double zHalfEx)
 {
@@ -271,4 +261,29 @@ FBShapeParams FBarrageBounder::GenerateSphereBounds(double pointx, double pointy
 FBShapeParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
 {
 	return FBShapeParams();
+}
+
+
+//SHAPELET MANAGEMENT
+void FBLetter::ApplyRotation(FQuat4d Rotator, FBLet Target)
+{
+}
+
+template <typename OutKeyDispatch>
+void FBLetter::PublishTransformFromJolt(FBLet Target)
+{
+}
+
+FVector3d FBLetter::GetCentroidPossiblyStale(FBLet Target)
+{
+	return FVector3d();
+}
+
+bool FBLetter::IsNotNull(FBLet Target)
+{
+	return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
+}
+
+void FBLetter::ApplyForce(FVector3d Force, FBLet Target)
+{
 }
