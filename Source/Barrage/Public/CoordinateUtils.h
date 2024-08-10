@@ -23,14 +23,20 @@ public:
 		return Float3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 	};
 
-	static inline double RadiusToJolt( double In)
+	static inline double RadiusToJolt(double In)
 	{
-		return In*100.0; //reverse is 0,2,1
+		return In*100.0; 
 	};
+
+	static inline double DiamToJoltHalfExtent(double In)
+	{
+		return In*50.0; 
+	};
+	
 	
 	static inline FVector3d FromJoltCoordinates(Vec3 In)
 {
-		return FVector3d(In.X/100.0, In.Z/100.0, In.Y/100.0); // this looks _wrong_.
+		return FVector3d(In[0]/100.0, In[2]/100.0, In[1]/100.0); // this looks _wrong_.
 }
 	static inline Quat ToJoltRotation(FQuat4d In)
 	{
@@ -38,6 +44,6 @@ public:
 	}
 	static inline FQuat4d FromJoltRotation(Quat In)
 {
-		return FQuat4d(-In.X, -In.Z, -In.Y, In.W);
+		return FQuat4d(-In.GetX(), -In.GetZ(), -In.GetY(), In.GetW());
 }
 };

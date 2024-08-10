@@ -56,9 +56,9 @@ public:
 FVector3d point;
 
 protected:
-	double bound1;
-	double bound2;
-	double bound3; 
+	double JoltX;
+	double JoltY;
+	double JoltZ; 
 };
 
 class FBSphereParams
@@ -73,7 +73,7 @@ public:
 	FVector3d point;
 
 protected:
-	double radius;
+	double JoltRadius;
 };
 
 class FBCapParams
@@ -88,8 +88,8 @@ public:
 	FVector3d point;
 
 protected:
-	double bound1;
-	double bound2;
+	double JoltHalfHeightOfCylinder;
+	double JoltRadius;
 	double bound3; 
 };
 

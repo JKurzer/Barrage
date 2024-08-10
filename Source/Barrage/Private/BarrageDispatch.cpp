@@ -1,5 +1,5 @@
 #include "BarrageDispatch.h"
-
+#include "Chaos/Particles.h"
 #include "FWorldSimOwner.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
@@ -87,6 +87,8 @@ FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarrage
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
 {
+	using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
+	using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
 	using ::CoordinateUtils;
 	if(!StaticMeshComponent) return nullptr;
 	if(!StaticMeshComponent->GetStaticMesh()) return nullptr;
@@ -107,7 +109,7 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	}
 
 	//Here we go!
-	auto& MeshSet = collbody->ChaosTriMeshes;
+	auto& MeshSet = collbody->TriMeshGeometries;
 	JPH::VertexList JoltVerts;
 	JPH::IndexedTriangleList JoltIndexedTriangles;
 	uint32 tris = 0;
@@ -122,12 +124,23 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 		//indexed triangles are made by collecting the vertexes, then generating triples describing the triangles.
 		//this allows the heavier vertices to be stored only once, rather than each time they are used. for large models
 		//like terrain, this can be extremely significant. though, it's not truly clear to me if it's worth it.
-		auto& VertToTriMap = Mesh->Elements();
+		auto& VertToTriBuffers = Mesh->Elements();
 		auto& Verts = Mesh->Particles().X();
-		for(auto& aTri : VertToTriMap)
+		if(VertToTriBuffers.RequiresLargeIndices())
 		{
-			JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+			for(auto& aTri : VertToTriBuffers.GetLargeIndexBuffer())
+			{
+				JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+			}
 		}
+		else
+		{
+			for(auto& aTri : VertToTriBuffers.GetSmallIndexBuffer())
+			{
+				JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+			}
+		}
+
 		for(auto& vtx : Verts)
 		{
 			//need to figure out how to defactor this without breaking typehiding or having to create a bunch of util.h files.
@@ -251,7 +264,9 @@ FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
 {
 	FBBoxParams blob;
 	blob.point = point;
-
+	blob.JoltX = CoordinateUtils::DiamToJoltHalfExtent(xDiam);
+	blob.JoltY = CoordinateUtils::DiamToJoltHalfExtent(zDiam); //this isn't a typo.
+	blob.JoltZ = CoordinateUtils::DiamToJoltHalfExtent(yDiam);
 	return blob;
 }
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
@@ -260,16 +275,17 @@ FBSphereParams FBarrageBounder::GenerateSphereBounds(FVector3d point, double rad
 {
 	FBSphereParams blob;
 	blob.point = point;
-	//
+	blob.JoltRadius = CoordinateUtils::RadiusToJolt(radius);
 	return blob;
 }
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
-//subject to change. the Point is left in the UE space. 
+//subject to change. the Point is left in the UE space, signified by the UE type. 
 FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
 {
 	FBCapParams blob;
 	blob.point = Capsule.Center();
-	//
+	blob.JoltRadius = CoordinateUtils::RadiusToJolt(Capsule.Radius);
+	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(Capsule.Extent());
 	return blob;
 }
 

@@ -1,5 +1,6 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
+#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 
 FWorldSimOwner::FWorldSimOwner(float cDeltaTime)
 {
@@ -62,7 +63,7 @@ inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBBoxParams& ToCreate, uint16
 	BodyID BodyIDTemp = BodyID();
 	EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 
-	BoxShapeSettings box_settings(Vec3(ToCreate.bound1, ToCreate.bound2, ToCreate.bound3));
+	BoxShapeSettings box_settings(Vec3(ToCreate.JoltX, ToCreate.JoltY, ToCreate.JoltZ));
 	//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
 	// Create the shape
 	ShapeSettings::ShapeResult box = box_settings.Create();
@@ -74,7 +75,7 @@ inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBBoxParams& ToCreate, uint16
 
 	// Add it to the world
 	body_interface->AddBody(box_body->GetID(), EActivation::Activate);
-	BodyIDTemp = floor->GetID();
+	BodyIDTemp = box_body->GetID();
 
 			
 	KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
@@ -93,7 +94,7 @@ inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBSphereParams& ToCreate, uin
 	BodyID BodyIDTemp = BodyID();
 	EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 	
-	BodyCreationSettings sphere_settings(new SphereShape(ToCreate.radius),
+	BodyCreationSettings sphere_settings(new SphereShape(ToCreate.JoltRadius),
 		                                     CoordinateUtils::ToJoltCoordinates(ToCreate.point),
 		                                     Quat::sIdentity(),
 		                                     MovementType,
@@ -113,9 +114,12 @@ inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBCapParams& ToCreate, uint16
 	KeyCompose = KeyCompose << 32;
 	BodyID BodyIDTemp = BodyID();
 	EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
-	
-	throw; //we don't support capsule yet.
-	
+	BodyCreationSettings cap_settings(new CapsuleShape(ToCreate.JoltHalfHeightOfCylinder, ToCreate.JoltRadius),
+										 CoordinateUtils::ToJoltCoordinates(ToCreate.point),
+										 Quat::sIdentity(),
+										 MovementType,
+										 Layer);
+	BodyIDTemp = body_interface->CreateAndAddBody(cap_settings, EActivation::Activate);
 	KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
 	//Barrage key is unique to WORLD and BODY. This is crushingly important.
 	BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
