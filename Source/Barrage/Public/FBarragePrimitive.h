@@ -14,6 +14,13 @@ inline UBarrageDispatch* GlobalBarrage = nullptr;
 class FBarragePrimitive
 {
 public:
+	enum FBShape
+	{
+		Capsule,
+		Box,
+		Sphere,
+		Static
+	};
 	//you cannot safely reorder these or it will change the pack width.
 	FBarrageKey KeyIntoBarrage; 
 	//This breaks our type dependency by using the underlying hashkey instead of the artillery type.
@@ -30,7 +37,7 @@ public:
 	// worrying about the exact structure of our lifecycles. it is also used for pool and rollback handling,
 	// and the implementation will change as those come online in artillery.
 	uint32 tombstone; //4b 
-	FBShapeParams::FBShape Me; //4b
+	FBShape Me; //4b
 
 	FBarragePrimitive(FBarrageKey Into, uint64 OutOf)
 	{

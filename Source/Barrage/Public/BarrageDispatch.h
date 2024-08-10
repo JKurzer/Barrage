@@ -4,6 +4,8 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "Containers/TripleBuffer.h"
 #include "FBarrageKey.h"
+
+#include "CapsuleTypes.h"
 #include "FBarragePrimitive.h"
 #include "Containers/CircularQueue.h"
 #include "Containers/Deque.h"
@@ -37,15 +39,18 @@ public:
 };
 class FBarrageBounder
 {
+	friend class FBBoxParams;
+	friend class FBSphereParams;
+	friend class FBCapParams;
 	//convert from UE to Jolt without exposing the jolt types.
-	static FBShapeParams GenerateBoxBounds(	double pointx, double pointy, double pointz, double xHalfEx, double yHalfEx, double zHalfEx);
+	static FBBoxParams GenerateBoxBounds(FVector3d point, double xDiam, double yDiam, double zDiam);
 	//transform the quaternion from the UE ref to the Jolt ref
 	//then apply it to the "primitive"
-	static FBShapeParams GenerateSphereBounds(double pointx, double pointy, double pointz, double radius);
+	static FBSphereParams GenerateSphereBounds(double pointx, double pointy, double pointz, double radius);
 
 	//as the barrage primitive contains both the in and out keys, that is sufficient to act as a full mapping
 	//IFF you can supply the dispatch provider that owns the out key. this is done as a template arg
-	static FBShapeParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
+	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
 };
 
 class FWorldSimOwner;
@@ -65,8 +70,11 @@ public:
 
 
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
-	FBLet CreateSimPrimitive(FBShapeParams& Definition, uint64 Outkey);
-	FBLet LoadComplexStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
+	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
+	FBLet CreatePrimitive(FBBoxParams& Definition, uint64 Outkey, uint16 Layer);
+	FBLet CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer);
+	FBLet CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer);
+	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
 	FBLet GetShapeRef(FBarrageKey Existing);
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
@@ -99,7 +107,7 @@ protected:
 
 private:
 	TSharedPtr<TMap<FBarrageKey, FBLet>> BodyLifecycleOwner;
-
+	FBLet ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
 

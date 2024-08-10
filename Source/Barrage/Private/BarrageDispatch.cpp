@@ -1,4 +1,5 @@
 #include "BarrageDispatch.h"
+
 #include "FWorldSimOwner.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
@@ -51,22 +52,39 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t ti
 {
 }
 
-//this method exists to allow us to hide the types for JPH by including them in the CPP rather than the .h
-// which is why the bounder and letter generate structs consumed by dispatch.
-FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 OutKey)
+//Defactoring the pointer management has actually made this much clearer than I expected.
+//these functions are overload polymorphic against our non-polymorphic POD params classes.
+//this is because over time, the needs of these classes may diverge and multiply
+//and it's not clear to me that Shapefulness is going to actually be the defining shared
+//feature. I'm going to wait to refactor the types until testing is complete.
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, uint64 OutKey, uint16 Layer)
 {
-	auto temp = JoltGameSim->CreatePrimitive(Definition);
-	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
-	indirect->Me = Definition.MyShape;
-	BodyLifecycleOwner->Add(indirect->KeyIntoBarrage, indirect);
+	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
+	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+}
+
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer)
+{
+	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
+	return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
+}
+FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer)
+{
+	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
+	return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
+}
+
+FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
+{
+	auto indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
+	indirect.Object->Me = form;
+	BodyLifecycleOwner->Add(indirect.Object->KeyIntoBarrage, indirect);
 	return indirect;
 }
 
-
-
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
-FBLet UBarrageDispatch::LoadComplexStaticMesh(FBShapeParams& Definition,
+FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
 {
 	using ::CoordinateUtils;
@@ -226,12 +244,15 @@ void UBarrageDispatch::StepWorld()
 
 
 //BOUNDING BOX HELPER METHODS
-//Bounds are OPAQUE. do not reference them.
+//Bounds are OPAQUE. do not reference them 
 
-FBShapeParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xHalfEx,
-	double yHalfEx, double zHalfEx)
+FBShapeParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
+	double yDiam, double zDiam)
 {
-	return FBShapeParams();
+	FBShapeParams box;
+	box.point = point;
+	//
+	
 }
 
 FBShapeParams FBarrageBounder::GenerateSphereBounds(double pointx, double pointy, double pointz, double radius)

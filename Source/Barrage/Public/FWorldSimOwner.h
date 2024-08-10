@@ -253,87 +253,22 @@
 		// number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
 		// Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
 		const uint cMaxContactConstraints = 16384;
+		const uint AllocationArenaSize = 100 * 1024 * 1024;
+		TSharedPtr<TempAllocatorImpl> Allocator;
 
-
-		TSharedPtr<TempAllocatorImpl> temp_allocator;
-
-		FWorldSimOwner(float cDeltaTime)
-		{
-			DeltaTime = cDeltaTime;
-			// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
-			// This needs to be done before any other Jolt function is called.
-			BarrageToJoltMapping = MakeShareable(new TMap<FBarrageKey, BodyID>());
-			RegisterDefaultAllocator();
-
-			temp_allocator = MakeShareable(new TempAllocatorImpl(100 * 1024 * 1024));
-			// Install trace and assert callbacks
-			Trace = TraceImpl;
-			JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;)
-
-			// Create a factory, this class is responsible for creating instances of classes based on their name or hash and is mainly used for deserialization of saved data.
-			// It is not directly used in this example but still required.
-			Factory::sInstance = new Factory();
-
-			// Register all physics types with the factory and install their collision handlers with the CollisionDispatch class.
-			// If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
-			// If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
-			RegisterTypes();
-
-			// We need a temp allocator for temporary allocations during the physics update. We're
-			// pre-allocating 10 MB to avoid having to do allocations during the physics update.
-			// B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
-			// If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
-			// malloc / free.
-
-
-			// We need a job system that will execute physics jobs on multiple threads. Typically
-			// you would implement the JobSystem interface yourself and let Jolt Physics run on top
-			// of your own job scheduler. JobSystemThreadPool is an example implementation.
-			job_system = MakeShareable(
-				new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1));
-			// Now we can create the actual physics system.
-			physics_system.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints,
-			                    broad_phase_layer_interface, object_vs_broadphase_layer_filter,
-			                    object_vs_object_layer_filter);
-
-
-			physics_system.SetBodyActivationListener(&body_activation_listener);
-
-
-			physics_system.SetContactListener(&contact_listener);
-
-			// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-			// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
-			body_interface = &physics_system.GetBodyInterface();
-
-
-			// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
-			// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
-			// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-			physics_system.OptimizeBroadPhase();
-
-		// here's Andrea's transform into jolt.
-		//	https://youtu.be/jhCupKFly_M?si=umi0zvJer8NymGzX&t=438
-		}
+		FWorldSimOwner(float cDeltaTime);
 
 		//we could use type indirection or inheritance, but the fact of the matter is that this is much easier
 		//to understand and vastly vastly faster. it's also easier to optimize out allocations, and it's very
 		//very easy to read for people who are probably already drowning in new types.
 		//finally, it allows FBShapeParams to be a POD and so we can reason about it really easily.
-		FBarrageKey CreatePrimitive(FBShapeParams& ToCreate);
+		FBarrageKey CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer);
+		FBarrageKey CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer);
+		FBarrageKey CreatePrimitive(FBCapParams& ToCreate, uint16 Layer);
 
 		//This'll be trouble.
 		//https://www.youtube.com/watch?v=KKC3VePrBOY&lc=Ugw9YRxHjcywQKH5LO54AaABAg
-		void StepSimulation()
-		{
-			// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
-			constexpr int cCollisionSteps = 1;
-
-			// Step the world
-			physics_system.Update(DeltaTime, cCollisionSteps, temp_allocator.Get(), job_system.Get());
-
-			//TODO: tombstone handling
-		}
+		void StepSimulation();
 
 		//Broad Phase is the first pass in the engine's cycle, and the optimization used to accelerate it breaks down as objects are added. As a result, when you have time after adding objects,
 		//you should call optimize broad phase. You should also batch object creation whenever possible, but we don't support that well yet.
@@ -346,14 +281,6 @@
 			physics_system.OptimizeBroadPhase();
 		}
 
-		~FWorldSimOwner()
-		{
-			UnregisterTypes();
-
-			// Destroy the factory
-			delete Factory::sInstance;
-			Factory::sInstance = nullptr;
-			GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Green, TEXT("Goodnight, Barrage!"));
-		}
+		~FWorldSimOwner();
 	};
 
