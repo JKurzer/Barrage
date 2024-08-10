@@ -69,7 +69,7 @@ public:
 	static inline FQuat4d FromJoltRotation(FQuat4d In);
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	FBLet CreateSimPrimitive(FBShapeParams& Definition, uint64 Outkey);
-	FBLet LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey);
+	FBLet LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey InKey);
 	FBLet GetShapeRef(FBarrageKey Existing);
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
@@ -101,7 +101,7 @@ protected:
 	friend FBLetter;
 
 private:
-	TSharedPtr<TMap<FBarrageKey, FBLet>> MasterRecordForLifecycle;
+	TSharedPtr<TMap<FBarrageKey, FBLet>> BodyLifecycleOwner;
 
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
@@ -122,7 +122,7 @@ private:
 	void Entomb(FBLet NONREFERENCE)
 	{
 		//request removal here
-		MasterRecordForLifecycle->Remove(NONREFERENCE->KeyIntoBarrage);
+		BodyLifecycleOwner->Remove(NONREFERENCE->KeyIntoBarrage);
 		// there doesn't seem to be a better way to do this idiomatically in the UE framework.
 		//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe,
 		Tombs[TombOffset]->Push(NONREFERENCE);

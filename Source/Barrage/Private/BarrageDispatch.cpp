@@ -34,13 +34,13 @@ void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
 	JoltGameSim = MakeShareable(new FWorldSimOwner(TickRateInDelta));
-	MasterRecordForLifecycle = MakeShareable(new TMap<FBarrageKey, FBLet>());
+	BodyLifecycleOwner = MakeShareable(new TMap<FBarrageKey, FBLet>());
 }
 
 void UBarrageDispatch::Deinitialize()
 {
 	Super::Deinitialize();
-	MasterRecordForLifecycle = nullptr;
+	BodyLifecycleOwner = nullptr;
 	for (auto& x : Tombs)
 	{
 		x = nullptr;
@@ -50,12 +50,12 @@ void UBarrageDispatch::Deinitialize()
 //TODO: these will all need reworked for determinism.
 FVector3d UBarrageDispatch::ToJoltCoordinates(FVector3d In)
 {
-	return FVector3d(In.X/100.0, In.Z/100.0, In.Y/100.0); //reverse is 0,2,1
+	return FVector3d(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 }
 
 FVector3d UBarrageDispatch::FromJoltCoordinates(FVector3d In)
 {
-	return FVector3d(In.X*100.0, In.Z*100.0, In.Y*100.0); // this looks _wrong_.
+	return FVector3d(In.X/100.0, In.Z/100.0, In.Y/100.0); // this looks _wrong_.
 }
 
 //These should be fine.
@@ -80,7 +80,7 @@ FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 Out
 	auto temp = JoltGameSim->CreatePrimitive(Definition);
 	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect->Me = Definition.MyShape;
-	MasterRecordForLifecycle->Add(indirect->KeyIntoBarrage, indirect);
+	BodyLifecycleOwner->Add(indirect->KeyIntoBarrage, indirect);
 	return indirect;
 }
 
@@ -103,7 +103,7 @@ const FVector WorldSpaceVertexLocation = **GetActorLocation() + GetTransform().T
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
-	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey)
+	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
 {
 	if(!StaticMeshComponent) return nullptr;
 	if(!StaticMeshComponent->GetStaticMesh()) return nullptr;
@@ -145,12 +145,36 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 		}
 		for(auto& vtx : Verts)
 		{
-			JoltVerts.push_back(Float3(vtx.X/100.0, vtx.Z/100.0, vtx.Y/100.0));
+			//need to figure out how to defactor this without breaking typehiding or having to create a bunch of util.h files.
+			//though, tbh, the util.h is the play. TODO: util.h ?
+			JoltVerts.push_back(Float3(vtx.X*100.0, vtx.Z*100.0, vtx.Y*100.0));
 		}
 	}
 	JPH::MeshShapeSettings FullMesh(JoltVerts, JoltIndexedTriangles);
 	//just the last boiler plate for now.
+	JPH::ShapeSettings::ShapeResult err = FullMesh.Create();
+	if(err.HasError())
+	{
+		return nullptr;
+	}
 
+	auto& shape = err.Get();
+	BodyCreationSettings meshbody;
+	BodyCreationSettings creation_settings;
+	creation_settings.mMotionType = EMotionType::Static;
+	creation_settings.mObjectLayer = Layers::NON_MOVING;
+	creation_settings.mPosition = RVec3(Definition.pointx*100, Definition.pointz*100,Definition.pointy*100);
+	creation_settings.mFriction = 0.5f;
+	creation_settings.SetShape(shape);
+	auto bID = JoltGameSim->body_interface->CreateAndAddBody(creation_settings, EActivation::Activate);
+
+	JoltGameSim->BarrageToJoltMapping->Add(InKey, bID);
+	
+	auto shared = MakeShareable(new FBarragePrimitive(InKey, Outkey));
+	BodyLifecycleOwner->Add(InKey, shared);
+	return shared;
+}
+//here's the same code, broadly, from War Thunder:
 	/*
 	    case PhysCollision::TYPE_TRIMESH:
     {
@@ -200,9 +224,7 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
       return check_and_return_shape(sanitizedShape.Create(), __LINE__);
     }
 	*/
-	
-	return FBLet();
-}
+
 
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
 //this is because we may have _many_ jolt sims running if we choose to do deterministic rollback in certain ways.
@@ -214,7 +236,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
 	//as a result, one of two states will arise: you get a null pointer, or you get a valid shared pointer
 	//which will hold the asset open until you're done, but the tombstone markings will be set, letting you know
 	//that this thoroughfare? it leads into the region of peril.
-	return MasterRecordForLifecycle->FindRef(Existing);
+	return BodyLifecycleOwner->FindRef(Existing);
 }
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
