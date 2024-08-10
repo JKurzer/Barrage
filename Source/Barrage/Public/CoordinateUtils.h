@@ -22,6 +22,11 @@ public:
 	{
 		return Float3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 	};
+
+	static inline double RadiusToJolt( double In)
+	{
+		return In*100.0; //reverse is 0,2,1
+	};
 	
 	static inline FVector3d FromJoltCoordinates(Vec3 In)
 {

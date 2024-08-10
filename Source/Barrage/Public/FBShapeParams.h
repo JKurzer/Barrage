@@ -1,6 +1,13 @@
 ﻿#pragma once
-#include "CapsuleTypes.h"
 
+//NOTE: If these are a serious memory drawdown, the code elsewhere is written such that they can be fully decomposed
+//into their sub classes and the layer parameter can be inferred. This allows the removal of unused bounds, the layer param
+// and the enum. this would result in potentially signficant savings BUT generally, these will actually be stored and reused
+// because the bounds are common across most objects of a type - missiles aren't getting scaled every shot -
+// and the point is left rewritable.
+
+//we've already bled clarity to avoid polymorphism, but I think that's actually useful, **because** I want the params to be
+//opaque so that we can keep the bounds in jolt coordinate space at all times.
 
 //Hey, so you might notice that this is exactly 56 bytes and ordered oddly.
 //That's because 56 bytes packs exactly the same on pack 4 or pack 8
@@ -15,8 +22,13 @@
 
 //REMINDER: these use UE type conventions and so are in UE space.
 //I bounced back and forth on this a bunch.
-struct FBShapeParams
+class FBShapeParams
 {
+	friend class FBLetter;
+	friend class FBarrageBounder;
+	friend class CoordinateUtils;
+	friend class FWorldSimOwner;
+	friend class UBarrageDispatch;
 	//we'll need to add mesh.
 	enum FBShape
 	{
@@ -30,6 +42,8 @@ struct FBShapeParams
 	//maybe we'll do oblates or fuzzy spheres. actually, I think that we'll need a weird-sphere of some sort for numerical
 	//stability. @JPOPHAM?
 FVector3d point;
+
+protected:
 	double bound1;
 	double bound2;
 	double bound3; //calculate your own halfex. :|

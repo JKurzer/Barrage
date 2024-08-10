@@ -226,7 +226,9 @@ void UBarrageDispatch::StepWorld()
 
 
 //BOUNDING BOX HELPER METHODS
-FBShapeParams FBarrageBounder::GenerateBoxBounds(double pointx, double pointy, double pointz, double xHalfEx,
+//Bounds are OPAQUE. do not reference them.
+
+FBShapeParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xHalfEx,
 	double yHalfEx, double zHalfEx)
 {
 	return FBShapeParams();
