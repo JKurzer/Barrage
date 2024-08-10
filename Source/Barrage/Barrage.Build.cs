@@ -31,6 +31,7 @@ public class Barrage : ModuleRules
 			new string[]
 			{
 				"Core",
+				"Chaos",
 				"JoltPhysics", "GeometryCore" // <- add jolt dependecy here
 				// ... add other public dependencies that you statically link with here ...
 			}
@@ -42,6 +43,7 @@ public class Barrage : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"Chaos",
 				"Slate",
 				"SlateCore",
 				"JoltPhysics" // <- add jolt dependecy here

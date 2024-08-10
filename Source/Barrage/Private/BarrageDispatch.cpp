@@ -1,4 +1,5 @@
 #include "BarrageDispatch.h"
+#include "Chaos/Particles.h"
 #include "FWorldSimOwner.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
@@ -51,24 +52,43 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t ti
 {
 }
 
-//this method exists to allow us to hide the types for JPH by including them in the CPP rather than the .h
-// which is why the bounder and letter generate structs consumed by dispatch.
-FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 OutKey)
+//Defactoring the pointer management has actually made this much clearer than I expected.
+//these functions are overload polymorphic against our non-polymorphic POD params classes.
+//this is because over time, the needs of these classes may diverge and multiply
+//and it's not clear to me that Shapefulness is going to actually be the defining shared
+//feature. I'm going to wait to refactor the types until testing is complete.
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, uint64 OutKey, uint16 Layer)
 {
-	auto temp = JoltGameSim->CreatePrimitive(Definition);
-	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
-	indirect->Me = Definition.MyShape;
-	BodyLifecycleOwner->Add(indirect->KeyIntoBarrage, indirect);
+	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
+	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+}
+
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer)
+{
+	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
+	return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
+}
+FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer)
+{
+	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
+	return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
+}
+
+FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
+{
+	auto indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
+	indirect.Object->Me = form;
+	BodyLifecycleOwner->Add(indirect.Object->KeyIntoBarrage, indirect);
 	return indirect;
 }
 
-
-
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
-FBLet UBarrageDispatch::LoadComplexStaticMesh(FBShapeParams& Definition,
+FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
 {
+	using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
+	using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
 	using ::CoordinateUtils;
 	if(!StaticMeshComponent) return nullptr;
 	if(!StaticMeshComponent->GetStaticMesh()) return nullptr;
@@ -89,7 +109,7 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBShapeParams& Definition,
 	}
 
 	//Here we go!
-	auto& MeshSet = collbody->ChaosTriMeshes;
+	auto& MeshSet = collbody->TriMeshGeometries;
 	JPH::VertexList JoltVerts;
 	JPH::IndexedTriangleList JoltIndexedTriangles;
 	uint32 tris = 0;
@@ -104,12 +124,23 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBShapeParams& Definition,
 		//indexed triangles are made by collecting the vertexes, then generating triples describing the triangles.
 		//this allows the heavier vertices to be stored only once, rather than each time they are used. for large models
 		//like terrain, this can be extremely significant. though, it's not truly clear to me if it's worth it.
-		auto& VertToTriMap = Mesh->Elements();
+		auto& VertToTriBuffers = Mesh->Elements();
 		auto& Verts = Mesh->Particles().X();
-		for(auto& aTri : VertToTriMap)
+		if(VertToTriBuffers.RequiresLargeIndices())
 		{
-			JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+			for(auto& aTri : VertToTriBuffers.GetLargeIndexBuffer())
+			{
+				JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+			}
 		}
+		else
+		{
+			for(auto& aTri : VertToTriBuffers.GetSmallIndexBuffer())
+			{
+				JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+			}
+		}
+
 		for(auto& vtx : Verts)
 		{
 			//need to figure out how to defactor this without breaking typehiding or having to create a bunch of util.h files.
@@ -196,7 +227,7 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBShapeParams& Definition,
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
 //this is because we may have _many_ jolt sims running if we choose to do deterministic rollback in certain ways.
 //This is a copy by value return on purpose, as we want the ref count to rise.
-FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
+FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 {
 	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
 	//if entomb gets sliced, the tombstone check will fail as long as it is performed within 27 milliseconds of this call.
@@ -225,21 +256,37 @@ void UBarrageDispatch::StepWorld()
 }
 
 
-//BOUNDING BOX HELPER METHODS
-FBShapeParams FBarrageBounder::GenerateBoxBounds(double pointx, double pointy, double pointz, double xHalfEx,
-	double yHalfEx, double zHalfEx)
-{
-	return FBShapeParams();
-}
 
-FBShapeParams FBarrageBounder::GenerateSphereBounds(double pointx, double pointy, double pointz, double radius)
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space. 
+FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
+	double yDiam, double zDiam)
 {
-	return FBShapeParams();
+	FBBoxParams blob;
+	blob.point = point;
+	blob.JoltX = CoordinateUtils::DiamToJoltHalfExtent(xDiam);
+	blob.JoltY = CoordinateUtils::DiamToJoltHalfExtent(zDiam); //this isn't a typo.
+	blob.JoltZ = CoordinateUtils::DiamToJoltHalfExtent(yDiam);
+	return blob;
 }
-
-FBShapeParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space. 
+FBSphereParams FBarrageBounder::GenerateSphereBounds(FVector3d point, double radius)
 {
-	return FBShapeParams();
+	FBSphereParams blob;
+	blob.point = point;
+	blob.JoltRadius = CoordinateUtils::RadiusToJolt(radius);
+	return blob;
+}
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space, signified by the UE type. 
+FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
+{
+	FBCapParams blob;
+	blob.point = Capsule.Center();
+	blob.JoltRadius = CoordinateUtils::RadiusToJolt(Capsule.Radius);
+	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(Capsule.Extent());
+	return blob;
 }
 
 
