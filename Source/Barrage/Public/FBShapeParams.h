@@ -12,6 +12,9 @@
 //remember to convert https://youtu.be/jhCupKFly_M?si=aoBCNbbAA9DzDPyy&t=438
 
 //#pragma pack(push, 1) //you can uncomment this to see the size exactly.
+
+//REMINDER: these use UE type conventions and so are in UE space.
+//I bounced back and forth on this a bunch.
 struct FBShapeParams
 {
 	//we'll need to add mesh.
@@ -26,9 +29,7 @@ struct FBShapeParams
 	//All shapes can be defined using just these bounds. actually, this is more than you need for a sphere but hey
 	//maybe we'll do oblates or fuzzy spheres. actually, I think that we'll need a weird-sphere of some sort for numerical
 	//stability. @JPOPHAM?
-	double pointx;
-	double pointy;
-	double pointz;
+FVector3d point;
 	double bound1;
 	double bound2;
 	double bound3; //calculate your own halfex. :|
