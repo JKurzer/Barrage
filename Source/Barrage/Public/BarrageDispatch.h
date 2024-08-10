@@ -42,14 +42,9 @@ class FBarrageBounder
 	friend class FBBoxParams;
 	friend class FBSphereParams;
 	friend class FBCapParams;
-	//convert from UE to Jolt without exposing the jolt types.
+	//convert from UE to Jolt without exposing the jolt types or coordinates.
 	static FBBoxParams GenerateBoxBounds(FVector3d point, double xDiam, double yDiam, double zDiam);
-	//transform the quaternion from the UE ref to the Jolt ref
-	//then apply it to the "primitive"
-	static FBSphereParams GenerateSphereBounds(double pointx, double pointy, double pointz, double radius);
-
-	//as the barrage primitive contains both the in and out keys, that is sufficient to act as a full mapping
-	//IFF you can supply the dispatch provider that owns the out key. this is done as a template arg
+	static FBSphereParams GenerateSphereBounds(FVector3d point, double radius);
 	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
 };
 
@@ -75,7 +70,7 @@ public:
 	FBLet CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer);
 	FBLet CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer);
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
-	FBLet GetShapeRef(FBarrageKey Existing);
+	FBLet GetShapeRef(FBarrageKey Existing) const;
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
 	//any non-zero value is the same, effectively, as a nullity for the purposes of any new operation.

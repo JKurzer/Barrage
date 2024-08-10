@@ -214,7 +214,7 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
 //this is because we may have _many_ jolt sims running if we choose to do deterministic rollback in certain ways.
 //This is a copy by value return on purpose, as we want the ref count to rise.
-FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing)
+FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 {
 	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
 	//if entomb gets sliced, the tombstone check will fail as long as it is performed within 27 milliseconds of this call.
@@ -243,26 +243,34 @@ void UBarrageDispatch::StepWorld()
 }
 
 
-//BOUNDING BOX HELPER METHODS
-//Bounds are OPAQUE. do not reference them 
 
-FBShapeParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space. 
+FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
 	double yDiam, double zDiam)
 {
-	FBShapeParams box;
-	box.point = point;
+	FBBoxParams blob;
+	blob.point = point;
+
+	return blob;
+}
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space. 
+FBSphereParams FBarrageBounder::GenerateSphereBounds(FVector3d point, double radius)
+{
+	FBSphereParams blob;
+	blob.point = point;
 	//
-	
+	return blob;
 }
-
-FBShapeParams FBarrageBounder::GenerateSphereBounds(double pointx, double pointy, double pointz, double radius)
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space. 
+FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
 {
-	return FBShapeParams();
-}
-
-FBShapeParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
-{
-	return FBShapeParams();
+	FBCapParams blob;
+	blob.point = Capsule.Center();
+	//
+	return blob;
 }
 
 
