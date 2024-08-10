@@ -3,9 +3,9 @@
 #include "FBShapeParams.h"
 
 
-class UBarrageDispatch;
+
 //don't use this, it's just here for speedy access from the barrage primitive destructor until we refactor.
-inline UBarrageDispatch* GlobalBarrage = nullptr;
+
 //A Barrage shapelet accepts forces and transformations as though it were not managed by an evil secret machine
 //and this allows us to pretty much Do The Right Thing. I've chosen to actually hide the specific kind of shape as an
 //enum prop rather than a class parameter. The pack pragma makes me reluctant to use non-POD approaches.
@@ -13,6 +13,7 @@ inline UBarrageDispatch* GlobalBarrage = nullptr;
 //of tombstone state, which is not particularly safe.
 class FBarragePrimitive
 {
+	friend class UBarrageDispatch;
 public:
 	enum FBShape
 	{
@@ -69,6 +70,8 @@ public:
 		//timings in play. it should be largely unnecessary, but it's also a very useful semantic for any pooled
 		//data and allows us to batch disposal nicely.
 		static inline bool IsNotNull(FBLet Target);
+protected:
+	static inline UBarrageDispatch* GlobalBarrage = nullptr;
 };
 
 

@@ -18,7 +18,7 @@ UBarrageDispatch::UBarrageDispatch()
 UBarrageDispatch::~UBarrageDispatch()
 {
 	//now that all primitives are destructed
-	GlobalBarrage = nullptr;
+	FBarragePrimitive::GlobalBarrage = nullptr;
 }
 
 void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
@@ -28,7 +28,7 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		x = MakeShareable(new TArray<FBLet>());
 	}
-	GlobalBarrage = this;
+	FBarragePrimitive::GlobalBarrage = this;
 }
 
 void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
