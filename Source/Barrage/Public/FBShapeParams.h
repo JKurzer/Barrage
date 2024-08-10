@@ -48,7 +48,6 @@ class FBBoxParams
 {
 	
 public:
-	friend class FBLetter;
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
 	friend class FWorldSimOwner;
@@ -65,7 +64,6 @@ class FBSphereParams
 {
 	
 public:
-	friend class FBLetter;
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
 	friend class FWorldSimOwner;
@@ -80,7 +78,6 @@ class FBCapParams
 {
 	
 public:
-	friend class FBLetter;
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
 	friend class FWorldSimOwner;
@@ -97,7 +94,6 @@ class FBMeshParams
 {
 	
 public:
-	friend class FBLetter;
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
 	friend class FWorldSimOwner;

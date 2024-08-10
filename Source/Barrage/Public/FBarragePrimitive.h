@@ -45,7 +45,30 @@ public:
 		KeyOutOfBarrage = OutOf;
 		tombstone = 0;
 	}
-	~FBarragePrimitive();
+	~FBarragePrimitive();//Note the use of shared pointers. Due to tombstoning, FBlets must always be used by reference.
+	//this is actually why they're called FBLets, as they're rented (or let) shapes that are also thus both shapelets and shape-lets.
+
+	typedef FBarragePrimitive FBShapelet;
+	typedef TSharedPtr<FBShapelet> FBLet;
+		//transform forces transparently from UE world space to jolt world space
+		//then apply them directly to the "primitive"
+		static void ApplyForce(FVector3d Force, FBLet Target);
+		//transform the quaternion from the UE ref to the Jolt ref
+		//then apply it to the "primitive"
+		static void ApplyRotation(FQuat4d Rotator, FBLet Target);
+
+		//as the barrage primitive contains both the in and out keys, that is sufficient to act as a full mapping
+		//IFF you can supply the dispatch provider that owns the out key. this is done as a template arg
+		template <typename OutKeyDispatch>
+		static bool TryPublishTransformFromJolt(FBLet Target);
+
+		static FVector3d GetCentroidPossiblyStale(FBLet Target);
+		//tombstoned primitives are treated as null even by live references, because while the primitive is valid
+		//and operations against it can be performed safely, no new operations should be allowed to start.
+		//the tombstone period is effectively a grace period due to the fact that we have quite a lot of different
+		//timings in play. it should be largely unnecessary, but it's also a very useful semantic for any pooled
+		//data and allows us to batch disposal nicely.
+		static inline bool IsNotNull(FBLet Target);
 };
 
 

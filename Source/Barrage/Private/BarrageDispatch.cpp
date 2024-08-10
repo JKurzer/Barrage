@@ -255,8 +255,6 @@ void UBarrageDispatch::StepWorld()
 	CleanTombs();
 }
 
-
-
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to change. the Point is left in the UE space. 
 FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
@@ -289,27 +287,3 @@ FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Caps
 	return blob;
 }
 
-
-//SHAPELET MANAGEMENT
-void FBLetter::ApplyRotation(FQuat4d Rotator, FBLet Target)
-{
-}
-
-template <typename OutKeyDispatch>
-void FBLetter::PublishTransformFromJolt(FBLet Target)
-{
-}
-
-FVector3d FBLetter::GetCentroidPossiblyStale(FBLet Target)
-{
-	return FVector3d();
-}
-
-bool FBLetter::IsNotNull(FBLet Target)
-{
-	return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
-}
-
-void FBLetter::ApplyForce(FVector3d Force, FBLet Target)
-{
-}
