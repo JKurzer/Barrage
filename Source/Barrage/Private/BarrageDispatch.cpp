@@ -2,6 +2,7 @@
 #include "FWorldSimOwner.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Chaos/TriangleMesh.h"
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
 
@@ -138,13 +139,18 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 		//like terrain, this can be extremely significant. though, it's not truly clear to me if it's worth it.
 		auto& VertToTriMap = Mesh->Elements();
 		auto& Verts = Mesh->Particles().X();
-		//this code unpacks the indexed tries, but we can actually just cross load them and save a bunch of allocs.
 		for(auto& aTri : VertToTriMap)
 		{
-			JoltIndexedTriangles.push_back(IndexedTriangle());
+			JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
+		}
+		for(auto& vtx : Verts)
+		{
+			JoltVerts.push_back(Float3(vtx.X/100.0, vtx.Z/100.0, vtx.Y/100.0));
 		}
 	}
-	
+	JPH::MeshShapeSettings FullMesh(JoltVerts, JoltIndexedTriangles);
+	//just the last boiler plate for now.
+
 	/*
 	    case PhysCollision::TYPE_TRIMESH:
     {
