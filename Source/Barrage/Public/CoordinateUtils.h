@@ -17,6 +17,12 @@ public:
 	{
 		return Vec3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 	};
+	
+	static inline Float3 ToJoltCoordinates( const Chaos::TVector<float, 3> In)
+	{
+		return Float3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
+	};
+	
 	static inline FVector3d FromJoltCoordinates(Vec3 In)
 {
 		return FVector3d(In.X/100.0, In.Z/100.0, In.Y/100.0); // this looks _wrong_.

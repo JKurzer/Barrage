@@ -1,6 +1,7 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
 
+//we need the coordinate utils, but we don't really want to include them in the .h
 inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBShapeParams& ToCreate)
 {
 	uint64_t KeyCompose;

@@ -66,7 +66,7 @@ public:
 
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	FBLet CreateSimPrimitive(FBShapeParams& Definition, uint64 Outkey);
-	FBLet LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
+	FBLet LoadComplexStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
 	FBLet GetShapeRef(FBarrageKey Existing);
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 

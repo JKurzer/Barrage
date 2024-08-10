@@ -1,11 +1,9 @@
 #include "BarrageDispatch.h"
 #include "FWorldSimOwner.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
-#include "Chaos/TriangleMesh.h"
-#include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
-#include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "CoordinateUtils.h"
 #include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
 
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
@@ -68,16 +66,19 @@ FBLet UBarrageDispatch::CreateSimPrimitive(FBShapeParams& Definition, uint64 Out
 
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
-FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
+FBLet UBarrageDispatch::LoadComplexStaticMesh(FBShapeParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
 {
+	using ::CoordinateUtils;
 	if(!StaticMeshComponent) return nullptr;
 	if(!StaticMeshComponent->GetStaticMesh()) return nullptr;
 	if(!StaticMeshComponent->GetStaticMesh()->GetRenderData()) return nullptr;
 	UBodySetup* body = StaticMeshComponent->GetStaticMesh()->GetBodySetup();
 	if(!body || body->CollisionTraceFlag != CTF_UseComplexAsSimple)
 	{
-		return nullptr; // we don't accept simple vs complex yet.
+		return nullptr; // we don't accept anything but complex or primitive yet.
+		//simple collision tends to use primitives, in which case, don't call this
+		//or compound shapes which will get added back in.
 	}
 
 	auto& complex = StaticMeshComponent->GetStaticMesh()->ComplexCollisionMesh;
@@ -113,7 +114,7 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 		{
 			//need to figure out how to defactor this without breaking typehiding or having to create a bunch of util.h files.
 			//though, tbh, the util.h is the play. TODO: util.h ?
-			JoltVerts.push_back(Float3(vtx.X*100.0, vtx.Z*100.0, vtx.Y*100.0));
+			JoltVerts.push_back(CoordinateUtils::ToJoltCoordinates(vtx));
 		}
 	}
 	JPH::MeshShapeSettings FullMesh(JoltVerts, JoltIndexedTriangles);
@@ -129,7 +130,7 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 	BodyCreationSettings creation_settings;
 	creation_settings.mMotionType = EMotionType::Static;
 	creation_settings.mObjectLayer = Layers::NON_MOVING;
-	creation_settings.mPosition = RVec3(Definition.pointx*100, Definition.pointz*100,Definition.pointy*100);
+	creation_settings.mPosition = CoordinateUtils::ToJoltCoordinates(Definition.point);
 	creation_settings.mFriction = 0.5f;
 	creation_settings.SetShape(shape);
 	auto bID = JoltGameSim->body_interface->CreateAndAddBody(creation_settings, EActivation::Activate);
