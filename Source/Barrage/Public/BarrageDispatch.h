@@ -63,10 +63,10 @@ public:
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 	virtual void Deinitialize() override;
 
-	static FVector3d ToJoltCoordinates(FVector3d In);
-	static FVector3d FromJoltCoordinates(FVector3d In);
-	static FQuat4d ToJoltRotation(FQuat4d In);
-	static FQuat4d FromJoltRotation(FQuat4d In);
+	static inline FVector3d ToJoltCoordinates(FVector3d In);
+	static inline FVector3d FromJoltCoordinates(FVector3d In);
+	static inline FQuat4d ToJoltRotation(FQuat4d In);
+	static inline FQuat4d FromJoltRotation(FQuat4d In);
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	FBLet CreateSimPrimitive(FBShapeParams& Definition, uint64 Outkey);
 	FBLet LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey);

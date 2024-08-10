@@ -100,6 +100,7 @@ const FVector WorldSpaceVertexLocation = **GetActorLocation() + GetTransform().T
 */
 
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
+//probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey)
 {
@@ -119,19 +120,31 @@ FBLet UBarrageDispatch::LoadStaticMeshLoadStaticMesh(FBShapeParams& Definition,
 		return nullptr;
 	}
 
-
-	
-/*	JPH::TriangleList JoltTriangles;
-	JoltTriangles.reserve(tris.Num());
-
-	for( auto& Indices : tris)
+	//Here we go!
+	auto& MeshSet = collbody->ChaosTriMeshes;
+	JPH::VertexList JoltVerts;
+	JPH::IndexedTriangleList JoltIndexedTriangles;
+	uint32 tris = 0;
+	for(auto& Mesh : MeshSet)
 	{
-		JoltTriangles.push_back(Data.Particles().X(Indices[2]);
-		JoltTriangles.push_back(Data.Particles().X(Indices[1]);
-		JoltTriangles.push_back(Data.Particles().X(Indices[0]);
-		
+		tris += Mesh->Elements().GetNumTriangles();
 	}
-*/
+	JoltVerts.reserve(tris);
+	JoltIndexedTriangles.reserve(tris);
+	for( auto& Mesh : MeshSet)
+	{
+		//indexed triangles are made by collecting the vertexes, then generating triples describing the triangles.
+		//this allows the heavier vertices to be stored only once, rather than each time they are used. for large models
+		//like terrain, this can be extremely significant. though, it's not truly clear to me if it's worth it.
+		auto& VertToTriMap = Mesh->Elements();
+		auto& Verts = Mesh->Particles().X();
+		//this code unpacks the indexed tries, but we can actually just cross load them and save a bunch of allocs.
+		for(auto& aTri : VertToTriMap)
+		{
+			JoltIndexedTriangles.push_back(IndexedTriangle());
+		}
+	}
+	
 	/*
 	    case PhysCollision::TYPE_TRIMESH:
     {
