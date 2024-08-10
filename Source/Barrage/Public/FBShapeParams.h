@@ -12,6 +12,9 @@
 //remember to convert https://youtu.be/jhCupKFly_M?si=aoBCNbbAA9DzDPyy&t=438
 
 //#pragma pack(push, 1) //you can uncomment this to see the size exactly.
+
+//REMINDER: these use UE type conventions and so are in UE space.
+//I bounced back and forth on this a bunch.
 struct FBShapeParams
 {
 	//we'll need to add mesh.
