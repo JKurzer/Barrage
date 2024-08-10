@@ -29,9 +29,7 @@ struct FBShapeParams
 	//All shapes can be defined using just these bounds. actually, this is more than you need for a sphere but hey
 	//maybe we'll do oblates or fuzzy spheres. actually, I think that we'll need a weird-sphere of some sort for numerical
 	//stability. @JPOPHAM?
-	double pointx;
-	double pointy;
-	double pointz;
+FVector3d point;
 	double bound1;
 	double bound2;
 	double bound3; //calculate your own halfex. :|
