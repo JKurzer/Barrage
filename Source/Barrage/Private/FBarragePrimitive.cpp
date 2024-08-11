@@ -54,7 +54,7 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target)
 			{
 				if(GlobalBarrage->JoltGameSim->body_interface->IsActive(*bID))
 				{
-					auto transform = GlobalBarrage->JoltGameSim->body_interface->GetWorldTransform(*bID);
+					
 					//TODO: @Eliza, can we figure out if updating the transforms in place is threadsafe? that'd be vastly preferable
 					//TODO: figure out how to make this less.... horrid.
 					GlobalBarrage->GameTransformPump->Enqueue(UBarrageDispatch::TransformUpdate(

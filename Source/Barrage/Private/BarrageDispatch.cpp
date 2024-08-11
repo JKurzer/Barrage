@@ -267,21 +267,23 @@ void UBarrageDispatch::StackUp()
 			while (!x.Queue->IsEmpty())
 			{
 				auto input = x.Queue->Peek();
+				auto bID = JoltGameSim->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
 				if(input->Action == PhysicsInputType::Rotation)
 				{
-				//	
+					//prolly gonna wanna change this to add torque................... not sure.
+					JoltGameSim->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
 				}
 				else if (input->Action == PhysicsInputType::OtherForce)
 				{
-					
+					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
 				else if (input->Action == PhysicsInputType::Velocity)
 				{
-					
+					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
 				else if(input->Action == PhysicsInputType::SelfMovement)
 				{
-					 
+					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
 				x.Queue->Dequeue();
 			}
