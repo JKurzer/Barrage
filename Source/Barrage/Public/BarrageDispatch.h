@@ -57,7 +57,9 @@ public:
 	{
 		uint64 ObjectKey;
 		uint64 sequence;
-		FTransform3d update; // this alignment looks wrong. Like outright wrong.
+		FVector3f Velocity;
+		FVector3f Position;
+		FQuat4f Rotation;// this alignment looks wrong. Like outright wrong.
 	};
 	uint8 ThreadAccTicker = 0;
 	typedef TCircularQueue<TransformUpdate> TransformUpdatesForGameThread;

@@ -45,16 +45,16 @@ public:
 	};
 	
 	
-	static inline FVector3d FromJoltCoordinates(Vec3 In)
+	static inline FVector3f FromJoltCoordinates(Vec3 In)
 {
-		return FVector3d(In[0]/100.0, In[2]/100.0, In[1]/100.0); // this looks _wrong_.
+		return FVector3f(In[0]/100.0, In[2]/100.0, In[1]/100.0); // this looks _wrong_.
 }
 	static inline Quat ToJoltRotation(FQuat4d In)
 	{
 		return Quat(-In.X, -In.Z, -In.Y, In.W);
 	}
-	static inline FQuat4d FromJoltRotation(Quat In)
+	static inline FQuat4f FromJoltRotation(Quat In)
 {
-		return FQuat4d(-In.GetX(), -In.GetZ(), -In.GetY(), In.GetW());
+		return FQuat4f(-In.GetX(), -In.GetZ(), -In.GetY(), In.GetW());
 }
 };

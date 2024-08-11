@@ -55,8 +55,15 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target)
 				if(GlobalBarrage->JoltGameSim->body_interface->IsActive(*bID))
 				{
 					auto transform = GlobalBarrage->JoltGameSim->body_interface->GetWorldTransform(*bID);
-					//TODO: @Eliza, can we figure out if updating the transforms in place is threadsafe? that'd be vastly preferable 
-					GlobalBarrage->GameTransformPump->Enqueue(UBarrageDispatch::TransformUpdate());
+					//TODO: @Eliza, can we figure out if updating the transforms in place is threadsafe? that'd be vastly preferable
+					//TODO: figure out how to make this less.... horrid.
+					GlobalBarrage->GameTransformPump->Enqueue(UBarrageDispatch::TransformUpdate(
+						Target->KeyOutOfBarrage,
+						TimeKeeping::Now(),
+						CoordinateUtils::FromJoltCoordinates(GlobalBarrage->JoltGameSim->body_interface->GetLinearVelocity(*bID)),
+						CoordinateUtils::FromJoltCoordinates(GlobalBarrage->JoltGameSim->body_interface->GetPosition(*bID)),
+						CoordinateUtils::FromJoltRotation(GlobalBarrage->JoltGameSim->body_interface->GetRotation(*bID))
+					));
 					return true;
 				}
 			}
