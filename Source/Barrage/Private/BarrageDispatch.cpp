@@ -256,7 +256,7 @@ void UBarrageDispatch::StepWorld()
 }
 
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
-//subject to change. the Point is left in the UE space. 
+//subject to semantic changes. the Point is left in the UE space. 
 FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
 	double yDiam, double zDiam)
 {
