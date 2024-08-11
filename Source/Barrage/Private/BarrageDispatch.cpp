@@ -35,14 +35,19 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
+
+	//this approach may actually be too slow. it is pleasingly lockless, but it allocs 16megs
+	//and just iterating through that could be Rough for the gamethread.
+	//TODO: investigate this thoroughly for perf.
+	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
 	JoltGameSim = MakeShareable(new FWorldSimOwner(TickRateInDelta));
-	BodyLifecycleOwner = MakeShareable(new TMap<FBarrageKey, FBLet>());
+	JoltBodyLifecycleOwnerMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
 }
 
 void UBarrageDispatch::Deinitialize()
 {
 	Super::Deinitialize();
-	BodyLifecycleOwner = nullptr;
+	JoltBodyLifecycleOwnerMapping = nullptr;
 	for (auto& x : Tombs)
 	{
 		x = nullptr;
@@ -79,7 +84,7 @@ FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarrage
 {
 	auto indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect.Object->Me = form;
-	BodyLifecycleOwner->Add(indirect.Object->KeyIntoBarrage, indirect);
+	JoltBodyLifecycleOwnerMapping->Add(indirect.Object->KeyIntoBarrage, indirect);
 	return indirect;
 }
 
@@ -170,7 +175,7 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	JoltGameSim->BarrageToJoltMapping->Add(InKey, bID);
 	
 	auto shared = MakeShareable(new FBarragePrimitive(InKey, Outkey));
-	BodyLifecycleOwner->Add(InKey, shared);
+	JoltBodyLifecycleOwnerMapping->Add(InKey, shared);
 	return shared;
 }
 //here's the same code, broadly, from War Thunder:
@@ -238,7 +243,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	//that this thoroughfare? it leads into the region of peril.
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
-	return BodyLifecycleOwner->FindRef(Existing);
+	return JoltBodyLifecycleOwnerMapping->FindRef(Existing);
 }
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
@@ -253,11 +258,52 @@ TStatId UBarrageDispatch::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UBarrageDispatch, STATGROUP_Tickables);
 }
 
+void UBarrageDispatch::StackUp()
+{
+	for(auto& x : ThreadAcc)
+	{
+		if(x.That != std::thread::id()) //if there IS a thread.
+		{
+			while (!x.Queue->IsEmpty())
+			{
+				auto input = x.Queue->Peek();
+				if(input->Action == PhysicsInputType::Rotation)
+				{
+				//	
+				}
+				else if (input->Action == PhysicsInputType::OtherForce)
+				{
+					
+				}
+				else if (input->Action == PhysicsInputType::Velocity)
+				{
+					
+				}
+				else if(input->Action == PhysicsInputType::SelfMovement)
+				{
+					 
+				}
+				x.Queue->Dequeue();
+			}
+		}
+			
+	}
+}
+
+template<typename TimeKeeping>
 void UBarrageDispatch::StepWorld()
 {
 	JoltGameSim->StepSimulation();
 	//maintain tombstones
 	CleanTombs();
+	auto HoldOpen = JoltBodyLifecycleOwnerMapping;
+	if(HoldOpen != nullptr)
+	{
+		for(auto& x : *HoldOpen.Get())
+		{
+			FBarragePrimitive::TryGetTransformFromJolt<TimeKeeping>(x.Value); //returns a bool that can be used for debug.
+		}
+	}
 }
 
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are

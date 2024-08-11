@@ -2,6 +2,7 @@
 #include "BarrageDispatch.h"
 #include "FBPhysicsInput.h"
 #include "CoordinateUtils.h"
+#include "FWorldSimOwner.h"
 //this is a long way to go to keep the types from leaking but I think it's probably worth it.
 
 //don't add inline. don't do it!
@@ -41,14 +42,24 @@ void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 }
 
 //generally, this should be called from the same thread as update.
-template <typename OutKeyDispatch>
-bool FBarragePrimitive::TryPublishTransformFromJolt(FBLet Target)
+template <typename TimeKeeping>
+bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target)
 {
 	if(IsNotNull(Target))
 	{
 		if(GlobalBarrage)
 		{
-			
+			auto bID = GlobalBarrage->JoltGameSim->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+			if(bID)
+			{
+				if(GlobalBarrage->JoltGameSim->body_interface->IsActive(*bID))
+				{
+					auto transform = GlobalBarrage->JoltGameSim->body_interface->GetWorldTransform(*bID);
+					//TODO: @Eliza, can we figure out if updating the transforms in place is threadsafe? that'd be vastly preferable 
+					GlobalBarrage->GameTransformPump->Enqueue(UBarrageDispatch::TransformUpdate());
+					return true;
+				}
+			}
 		}
 		
 	}

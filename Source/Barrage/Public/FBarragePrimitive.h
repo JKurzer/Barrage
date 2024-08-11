@@ -58,10 +58,12 @@ public:
 		//then apply it to the "primitive"
 		static void ApplyRotation(FQuat4d Rotator, FBLet Target);
 
-		//as the barrage primitive contains both the in and out keys, that is sufficient to act as a full mapping
-		//IFF you can supply the dispatch provider that owns the out key. this is done as a template arg
-		template <typename OutKeyDispatch>
-		static bool TryPublishTransformFromJolt(FBLet Target);
+		//My current thinking:
+		//This should be called from the gamethread, in the PULL model. it doesn't lock, but it will fail if the lock is held on that body
+		//because we should _never_ block the game thread. unfortunately, this means I can't provide the code to actually use
+		//this as part of jolt very easily at first, but I'll try to defactor whatever I built into a sample implementation for Barrage.
+		template <typename TimeKeeping>
+		static bool TryGetTransformFromJolt(FBLet Target);
 
 		static FVector3d GetCentroidPossiblyStale(FBLet Target);
 		//tombstoned primitives are treated as null even by live references, because while the primitive is valid

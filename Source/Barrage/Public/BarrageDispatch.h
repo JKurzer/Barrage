@@ -47,16 +47,23 @@ class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 public:
 	
 	typedef TCircularQueue<FBPhysicsInput> ThreadFeed;
+	
 	struct FeedMap
 	{
 		std::thread::id That = std::thread::id();
 		TSharedPtr<ThreadFeed> Queue = nullptr;
 	};
+	struct TransformUpdate
+	{
+		uint64 ObjectKey;
+		uint64 sequence;
+		FTransform3d update; // this alignment looks wrong. Like outright wrong.
+	};
 	uint8 ThreadAccTicker = 0;
-
+	typedef TCircularQueue<TransformUpdate> TransformUpdatesForGameThread;
+	TSharedPtr<TransformUpdatesForGameThread> GameTransformPump;
 	FeedMap ThreadAcc[ALLOWED_THREADS_FOR_BARRAGE_PHYSICS];
 	 //this value indicates you have none.
-	
 	mutable FCriticalSection GrowOnlyAccLock;
 
 	// Why would I do it this way? It's fast and easy to debug, and we will probably need to force a thread
@@ -107,14 +114,18 @@ public:
 
 	virtual TStatId GetStatId() const override;
 	TSharedPtr<FWorldSimOwner> JoltGameSim;
+
+	//StackUp should be called before stepworld and from the same thread. anything can be done between them.
+	void StackUp();
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
+	template<typename TimeKeeping>
 	void StepWorld();
 
 protected:
 	friend FWorldSimOwner;
 
 private:
-	TSharedPtr<TMap<FBarrageKey, FBLet>> BodyLifecycleOwner;
+	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleOwnerMapping;
 	FBLet ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
@@ -135,11 +146,11 @@ private:
 	void Entomb(FBLet NONREFERENCE)
 	{
 		//request removal here
-		BodyLifecycleOwner->Remove(NONREFERENCE->KeyIntoBarrage);
+		JoltBodyLifecycleOwnerMapping->Remove(NONREFERENCE->KeyIntoBarrage);
 		// there doesn't seem to be a better way to do this idiomatically in the UE framework.
-		//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe,
+		//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe?
 		Tombs[TombOffset]->Push(NONREFERENCE);
-		//DO NOT make K a reference parameter
+		//DO NOT make that a reference parameter
 	}
 };
 
