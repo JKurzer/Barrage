@@ -1,14 +1,15 @@
 #include "BarrageDispatch.h"
-#include "Chaos/Particles.h"
 #include "FWorldSimOwner.h"
-#include "Chaos/TriangleMeshImplicitObject.h"
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "CoordinateUtils.h"
-#include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
+PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
+#include "FBPhysicsInput.h"
+PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
+
 
 
 UBarrageDispatch::UBarrageDispatch()
@@ -231,15 +232,19 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 {
 	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
 	//if entomb gets sliced, the tombstone check will fail as long as it is performed within 27 milliseconds of this call.
-	//as a result, one of two states will arise: you get a null pointer, or you get a valid shared pointer
-	//which will hold the asset open until you're done, but the tombstone markings will be set, letting you know
+	//as a result, one of three states will arise:
+	//1) you get a null pointer
+	//2) you get a valid shared pointer which will hold the asset open until you're done, but the tombstone markings will be set, letting you know
 	//that this thoroughfare? it leads into the region of peril.
+	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
+	//this means your calls will all succeed but none will be applied during the apply shadow phase.
 	return BodyLifecycleOwner->FindRef(Existing);
 }
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 {
-	//TODO return owned Joltstuff to pool or dealloc	
+	//TODO return owned Joltstuff to pool or dealloc
+
 }
 
 

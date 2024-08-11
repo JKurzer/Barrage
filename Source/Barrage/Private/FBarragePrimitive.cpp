@@ -1,5 +1,6 @@
 ﻿#include "FBarragePrimitive.h"
 #include "BarrageDispatch.h"
+#include "FBPhysicsInput.h"
 #include "CoordinateUtils.h"
 //this is a long way to go to keep the types from leaking but I think it's probably worth it.
 
@@ -25,7 +26,17 @@ void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 {
 	if(IsNotNull(Target))
 	{
-		//GlobalBarrage
+		if(GlobalBarrage)
+		{
+			if(MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			{
+				GlobalBarrage->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+				FBPhysicsInput(Target, 0, PhysicsInputType::Rotation,
+					CoordinateUtils::ToBarrageRotation(Rotator)
+				)
+				);
+			}
+		}
 	}
 }
 
@@ -37,7 +48,7 @@ bool FBarragePrimitive::TryPublishTransformFromJolt(FBLet Target)
 	{
 		if(GlobalBarrage)
 		{
-
+			
 		}
 		
 	}
@@ -54,6 +65,10 @@ FVector3d FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 	return FVector3d::ZeroVector;
 }
 
+//while it seems like a midframe tombstoning could lead to non-determinism,
+//physics mods are actually applied all on one thread right before update kicks off
+//this allows us to run applies _while we update_ and gains us significant concurrency advantages
+//and also guarantees that calculation phase state is invariant.
 bool FBarragePrimitive::IsNotNull(FBLet Target)
 {
 	return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
@@ -61,5 +76,18 @@ bool FBarragePrimitive::IsNotNull(FBLet Target)
 
 void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 {
-	//globalbarrage
+	if(IsNotNull(Target))
+	{
+		if(GlobalBarrage)
+		{
+			if(MyBARRAGEIndex< ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			{
+				GlobalBarrage->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+				FBPhysicsInput(Target, 0, PhysicsInputType::OtherForce,
+					CoordinateUtils::ToBarrageForce(Force)
+				)
+				);
+			}
+		}
+	}
 }

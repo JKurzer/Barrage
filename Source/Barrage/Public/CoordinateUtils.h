@@ -17,6 +17,17 @@ public:
 	{
 		return Vec3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 	};
+
+	//we store forces and rotations both in 4d vecs to allow better memory locality.
+	static inline Quat ToBarrageForce(FVector3d In)
+	{
+		return Quat(In.X*100.0, In.Z*100.0, In.Y*100.0, 0); //reverse is 0,2,1
+	};
+	//we store forces and rotations both in 4d vecs to allow better memory locality.
+	static inline Quat ToBarrageRotation(FQuat4d In)
+	{
+		return ToJoltRotation(In);
+	};
 	
 	static inline Float3 ToJoltCoordinates( const Chaos::TVector<float, 3> In)
 	{

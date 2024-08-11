@@ -1,10 +1,14 @@
 #pragma once
 
+#include <thread>
+
 #include "CoreMinimal.h"
+#include "Chaos/TriangleMeshImplicitObject.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Containers/TripleBuffer.h"
 #include "FBarrageKey.h"
 
+#include "Chaos/Particles.h"
 #include "CapsuleTypes.h"
 #include "FBarragePrimitive.h"
 #include "Containers/CircularQueue.h"
@@ -12,6 +16,7 @@
 #include "BarrageDispatch.generated.h"
 
 
+struct FBPhysicsInput;
 
 class FBarrageBounder
 {
@@ -26,14 +31,47 @@ class FBarrageBounder
 
 class FWorldSimOwner;
 
+#define ALLOWED_THREADS_FOR_BARRAGE_PHYSICS 64
+//if we could make a promise about when threads are allocated, we could probably get rid of this
+//since the accumulator is in the world subsystem and so gets cleared when the world spins down.
+//that would mean that we could add all the threads, then copy the state from the volatile array to a
+//fixed read-only hash table during begin play. this is already complicated though, and let's see if we like it
+//before we invest more time in it. I had a migraine when I wrote this, by way of explanation --J
+thread_local static uint32 MyBARRAGEIndex = ALLOWED_THREADS_FOR_BARRAGE_PHYSICS + 1;
 UCLASS()
 class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 	static inline constexpr float TickRateInDelta = 1.0 / 120.0;
-
+	
 public:
+	
+	typedef TCircularQueue<FBPhysicsInput> ThreadFeed;
+	struct FeedMap
+	{
+		std::thread::id That = std::thread::id();
+		TSharedPtr<ThreadFeed> Queue = nullptr;
+	};
+	uint8 ThreadAccTicker = 0;
+
+	FeedMap ThreadAcc[ALLOWED_THREADS_FOR_BARRAGE_PHYSICS];
+	 //this value indicates you have none.
+	
+	mutable FCriticalSection GrowOnlyAccLock;
+
+	// Why would I do it this way? It's fast and easy to debug, and we will probably need to force a thread
+	// order for determinism. this ensures there's a call point where we can institute that.
+	void GrantFeed()
+	{
+	FScopeLock GrantFeedLock(&GrowOnlyAccLock);
+		ThreadAcc[ThreadAccTicker].That = std::this_thread::get_id();
+		MyBARRAGEIndex = ThreadAccTicker;
+		//TODO: expand if we need for rollback powers. could be sliiiick
+		ThreadAcc[ThreadAccTicker].Queue = MakeShareable(new ThreadFeed(1024));
+		++ThreadAccTicker;
+	}
 	UBarrageDispatch();
+	
 	virtual ~UBarrageDispatch() override;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
