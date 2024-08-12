@@ -8,10 +8,7 @@ A CMAKE installer is provided for the sake of your sanity and mine. Any modern C
 
 ### 3: Compiler Version Pinning
 In Source/JoltPhysics/JoltPhysics.Build.cs you will find that this plugin not only relies on UE4CMake, but uses a specific  
-version of the VC toolchain. This version or a suitable comparable should be installed if you've installed UE5.4. If you have not,  
-you can find a copy of the VC compiler 14.38.33130 in the zip of the same name at root. You will need to need to run the setup file for the 
-compiler as well. However, this is provided without warranty or promise of support. If possible, please install the correct version
-using the VS installer or as part of your UE install and associated workload.
+version of the VC toolchain. This version or a suitable comparable should be installed if you've installed UE5.4. If you have not, you can find a copy of the VC compiler 14.38.33130 in the zip of the same name at root. You will need to need to run the setup file for the compiler as well. However, this is provided without warranty or promise of support. If possible, please install the correct version using the VS installer or as part of your UE install and associated workload.
 
 ## Known Install issues
 ### IL Mismatch error 
