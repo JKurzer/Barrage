@@ -33,7 +33,7 @@ public class Barrage : ModuleRules
 			{
 				"Core",
 				"Chaos",
-				"JoltPhysics", "GeometryCore" // <- add jolt dependecy here
+				"JoltPhysics", "GeometryCore", "SkeletonKey" // <- add jolt dependecy here
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -47,7 +47,8 @@ public class Barrage : ModuleRules
 				"Chaos",
 				"Slate",
 				"SlateCore",
-				"JoltPhysics" // <- add jolt dependecy here
+				"JoltPhysics",
+				"SkeletonKey" // <- add jolt dependecy here
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
