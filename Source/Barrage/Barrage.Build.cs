@@ -15,7 +15,6 @@ public class Barrage : ModuleRules
 			new string[] {
 				// ... add public include paths required here ...
 				Path.Combine(ModuleDirectory,"../JoltPhysics"), // for jolt includes
-				"Chaos"
 			}
 			);
 				

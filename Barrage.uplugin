@@ -25,6 +25,10 @@
 		{
 			"Name": "CMakeTarget",
 			"Enabled": true
+		},
+		{
+			"Name": "SkeletonKey",
+			"Enabled": true
 		}
 	]
 }

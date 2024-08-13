@@ -6,13 +6,13 @@
 
 struct FBarrageKey
 {	
-	uint64_t KeyIntoBarrage;
-	friend uint32 GetTypeHash(const FBarrageKey& Other)
+	uint64 KeyIntoBarrage;
+	friend uint64 GetTypeHash(const FBarrageKey& Other)
 	{
-		// it's probably fine!
-		return GetTypeHash(Other.KeyIntoBarrage);
+		//it looks like get type hash can be a 64bit return? 
+		return  FORGE_SKELETON_KEY(GetTypeHash(Other.KeyIntoBarrage), SKELLY::SFIX_BAR_PRIM);
 	}
 };
 static bool operator==(FBarrageKey const& lhs, FBarrageKey const& rhs) {
-	return (lhs.KeyIntoBarrage == rhs.KeyIntoBarrage);
+	return  (lhs.KeyIntoBarrage == rhs.KeyIntoBarrage);
 }
