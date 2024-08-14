@@ -30,6 +30,7 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 		x = MakeShareable(new TArray<FBLet>());
 	}
 	FBarragePrimitive::GlobalBarrage = this;
+	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
 }
 
 void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
