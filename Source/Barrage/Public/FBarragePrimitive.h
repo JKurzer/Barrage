@@ -51,6 +51,13 @@ public:
 
 	typedef FBarragePrimitive FBShapelet;
 	typedef TSharedPtr<FBShapelet> FBLet;
+
+	//STATIC METHODS
+	//-------------------------------
+	//By and at large, these are static so that they can interact with FBLets, instead of the bare primitive. We don't
+	//really want to ever encourage people to use those.
+	//-------------------------------
+	
 		//transform forces transparently from UE world space to jolt world space
 		//then apply them directly to the "primitive"
 		static void ApplyForce(FVector3d Force, FBLet Target);
@@ -64,7 +71,6 @@ public:
 		//this as part of jolt very easily at first, but I'll try to defactor whatever I built into a sample implementation for Barrage.
 		template <typename TimeKeeping>
 		static bool TryGetTransformFromJolt(FBLet Target);
-
 		static FVector3d GetCentroidPossiblyStale(FBLet Target);
 		//tombstoned primitives are treated as null even by live references, because while the primitive is valid
 		//and operations against it can be performed safely, no new operations should be allowed to start.

@@ -72,7 +72,6 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target)
 	}
 	return false;
 }
-
 FVector3d FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 {
 	//GlobalBarrage	
