@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CoreTypeKeys.h"
+#include "FBarragePrimitive.h"
 #include "Components/ActorComponent.h"
 #include "BarrageGravityOnlyTester.generated.h"
 
@@ -15,6 +17,11 @@ class BARRAGE_API UBarrageGravityOnlyTester : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UBarrageGravityOnlyTester();
+	FBLet MyBarrageBody;
+	ObjectKey MyObjectKey;
+	bool IsReady = false;
+
+	virtual void BeforeBeginPlay(ObjectKey TransformOwner);
 
 protected:
 	// Called when the game starts

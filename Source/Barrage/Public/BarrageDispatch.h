@@ -26,6 +26,7 @@ class FBarrageBounder
 	friend class FBSphereParams;
 	friend class FBCapParams;
 	//convert from UE to Jolt without exposing the jolt types or coordinates.
+public:
 	static FBBoxParams GenerateBoxBounds(FVector3d point, double xDiam, double yDiam, double zDiam);
 	static FBSphereParams GenerateSphereBounds(FVector3d point, double radius);
 	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
