@@ -42,8 +42,7 @@ void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 }
 
 //generally, this should be called from the same thread as update.
-template <typename TimeKeeping>
-bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target)
+bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target, uint64 Time)
 {
 	if(IsNotNull(Target))
 	{
@@ -59,7 +58,7 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target)
 					//TODO: figure out how to make this less.... horrid.
 					GlobalBarrage->GameTransformPump->Enqueue(UBarrageDispatch::TransformUpdate(
 						Target->KeyOutOfBarrage,
-						TimeKeeping::Now(),
+						Time,
 						CoordinateUtils::FromJoltCoordinates(GlobalBarrage->JoltGameSim->body_interface->GetLinearVelocity(*bID)),
 						CoordinateUtils::FromJoltCoordinates(GlobalBarrage->JoltGameSim->body_interface->GetPosition(*bID)),
 						CoordinateUtils::FromJoltRotation(GlobalBarrage->JoltGameSim->body_interface->GetRotation(*bID))

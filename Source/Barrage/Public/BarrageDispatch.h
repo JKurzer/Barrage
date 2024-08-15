@@ -120,8 +120,7 @@ public:
 	//StackUp should be called before stepworld and from the same thread. anything can be done between them.
 	void StackUp();
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
-	template<typename TimeKeeping>
-	void StepWorld();
+	void StepWorld(uint64 Time);
 
 protected:
 	friend FWorldSimOwner;

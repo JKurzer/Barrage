@@ -293,8 +293,7 @@ void UBarrageDispatch::StackUp()
 	}
 }
 
-template<typename TimeKeeping>
-void UBarrageDispatch::StepWorld()
+void UBarrageDispatch::StepWorld(uint64 Time)
 {
 	JoltGameSim->StepSimulation();
 	//maintain tombstones
@@ -304,7 +303,7 @@ void UBarrageDispatch::StepWorld()
 	{
 		for(auto& x : *HoldOpen.Get())
 		{
-			FBarragePrimitive::TryGetTransformFromJolt<TimeKeeping>(x.Value); //returns a bool that can be used for debug.
+			FBarragePrimitive::TryGetTransformFromJolt(x.Value, Time); //returns a bool that can be used for debug.
 		}
 	}
 }
