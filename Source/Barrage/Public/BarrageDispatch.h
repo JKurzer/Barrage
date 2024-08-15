@@ -15,8 +15,10 @@
 #include "Containers/Deque.h"
 #include "BarrageDispatch.generated.h"
 
-
-struct FBPhysicsInput;
+struct FBInputPlacementNew
+{
+	char block[48];
+};
 
 class FBarrageBounder
 {
@@ -46,7 +48,7 @@ class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 	
 public:
 	
-	typedef TCircularQueue<FBPhysicsInput> ThreadFeed;
+	typedef TCircularQueue<FBInputPlacementNew> ThreadFeed;
 	
 	struct FeedMap
 	{

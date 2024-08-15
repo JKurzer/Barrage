@@ -81,14 +81,6 @@ FVector3d FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 	return FVector3d::ZeroVector;
 }
 
-//while it seems like a midframe tombstoning could lead to non-determinism,
-//physics mods are actually applied all on one thread right before update kicks off
-//this allows us to run applies _while we update_ and gains us significant concurrency advantages
-//and also guarantees that calculation phase state is invariant.
-bool FBarragePrimitive::IsNotNull(FBLet Target)
-{
-	return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
-}
 
 void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 {

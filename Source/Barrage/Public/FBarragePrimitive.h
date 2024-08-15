@@ -76,7 +76,12 @@ public:
 		//the tombstone period is effectively a grace period due to the fact that we have quite a lot of different
 		//timings in play. it should be largely unnecessary, but it's also a very useful semantic for any pooled
 		//data and allows us to batch disposal nicely.
-		static inline bool IsNotNull(FBLet Target);
+		//while it seems like a midframe tombstoning could lead to non-determinism,
+		//physics mods are actually effectively applied all on one thread right before update kicks off thanks to StackUp()
+		static inline bool IsNotNull(FBLet Target)
+		{
+			return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
+		};
 protected:
 	static inline UBarrageDispatch* GlobalBarrage = nullptr;
 };

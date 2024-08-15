@@ -2,9 +2,9 @@
 #include "FWorldSimOwner.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "CoordinateUtils.h"
+#include "FBPhysicsInput.h"
 PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
-#include "FBPhysicsInput.h"
 PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
@@ -267,7 +267,7 @@ void UBarrageDispatch::StackUp()
 		{
 			while (!x.Queue->IsEmpty())
 			{
-				auto input = x.Queue->Peek();
+				auto input = FBPhysicsInput::FromExistingMemory(*x.Queue->Peek());
 				auto bID = JoltGameSim->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
 				if(input->Action == PhysicsInputType::Rotation)
 				{
