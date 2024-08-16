@@ -141,7 +141,7 @@ void FWorldSimOwner::StepSimulation()
 FWorldSimOwner::~FWorldSimOwner()
 {
 	UnregisterTypes();
-
+	
 	// Destroy the factory
 	delete Factory::sInstance;
 	Factory::sInstance = nullptr;

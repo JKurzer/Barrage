@@ -280,6 +280,17 @@
 			// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
 			physics_system.OptimizeBroadPhase();
 		}
+		void FinalizeReleasePrimitive(FBarrageKey BarrageKey)
+		{
+			//TODO return owned Joltstuff to pool or dealloc
+			auto bID = BarrageToJoltMapping->Find(BarrageKey);
+			if(bID)
+			{
+				body_interface->RemoveBody(*bID);
+				body_interface->DestroyBody(*bID);
+			}
+
+		}
 
 		~FWorldSimOwner();
 	};

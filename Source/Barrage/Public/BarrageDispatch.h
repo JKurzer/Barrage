@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "Containers/TripleBuffer.h"
 #include "FBarrageKey.h"
 
 #include "Chaos/Particles.h"
@@ -20,7 +19,14 @@ struct FBInputPlacementNew
 	char block[48];
 };
 
-class FBarrageBounder
+enum LayersMap
+{
+	 NON_MOVING = 0,
+MOVING = 1,
+NUM_LAYERS = 2
+};
+
+class BARRAGE_API FBarrageBounder
 {
 	friend class FBBoxParams;
 	friend class FBSphereParams;
@@ -143,7 +149,13 @@ private:
 	void CleanTombs()
 	{
 		//free tomb at offset - TombstoneInitialMinimum, fulfilling our promised minimum.
-		Tombs[(TombOffset - TombstoneInitialMinimum) % (TombstoneInitialMinimum + 1)]->Empty(); //roast 'em lmao.
+		auto HoldOpen = Tombs;
+		//TODO: this was about as safe as it looked, lol.
+		auto& Mausoleum = HoldOpen[(TombOffset - TombstoneInitialMinimum) % (TombstoneInitialMinimum + 1)];
+		if(Mausoleum)
+		{
+			Mausoleum->Empty(); //roast 'em lmao.
+		}
 		TombOffset = (TombOffset + 1) % (TombstoneInitialMinimum + 1);
 	}
 
