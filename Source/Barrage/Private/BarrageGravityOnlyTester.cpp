@@ -5,6 +5,7 @@
 
 #include "BarrageDispatch.h"
 #include "FWorldSimOwner.h"
+#include "KeyCarry.h"
 
 // Sets default values for this component's properties
 UBarrageGravityOnlyTester::UBarrageGravityOnlyTester()
@@ -28,7 +29,8 @@ void UBarrageGravityOnlyTester::BeginPlay()
 	Super::BeginPlay();
 	if(!IsReady)
 	{
-		throw;
+		MyObjectKey = SKELETON::Key(this);
+		IsReady = true;
 	}
 	if(!IsDefaultSubobject() && MyObjectKey != 0)
 	{
