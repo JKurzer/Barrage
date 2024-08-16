@@ -34,7 +34,7 @@ void UBarrageGravityOnlyTester::BeginPlay()
 	{
 		auto Physics =  GetWorld()->GetSubsystem<UBarrageDispatch>();
 		auto params = FBarrageBounder::GenerateBoxBounds(GetOwner()->GetActorLocation(), 2, 2 ,2);
-		MyBarrageBody = Physics->CreatePrimitive(params, 10, Layers::MOVING);
+		MyBarrageBody = Physics->CreatePrimitive(params, MyObjectKey, Layers::MOVING);
 	}
 }
 
