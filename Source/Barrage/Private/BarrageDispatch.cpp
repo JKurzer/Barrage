@@ -53,6 +53,7 @@ void UBarrageDispatch::Deinitialize()
 	{
 		x = nullptr;
 	}
+	JoltGameSim = nullptr;
 }
 
 void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp)
@@ -249,8 +250,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 {
-	//TODO return owned Joltstuff to pool or dealloc
-
+	JoltGameSim->FinalizeReleasePrimitive(BarrageKey);
 }
 
 
@@ -295,18 +295,27 @@ void UBarrageDispatch::StackUp()
 
 void UBarrageDispatch::StepWorld(uint64 Time)
 {
-	JoltGameSim->StepSimulation();
-	//maintain tombstones
-	CleanTombs();
-	auto HoldOpen = JoltBodyLifecycleOwnerMapping;
-	if(HoldOpen != nullptr)
+	auto HoldOpenWorld = JoltGameSim;
+	if(HoldOpenWorld)
 	{
-		for(auto& x : *HoldOpen.Get())
+		JoltGameSim->StepSimulation();
+		//maintain tombstones
+		CleanTombs();
+		auto HoldOpen = JoltBodyLifecycleOwnerMapping;
+		if(HoldOpen != nullptr)
 		{
-			FBarragePrimitive::TryGetTransformFromJolt(x.Value, Time); //returns a bool that can be used for debug.
+			for(auto& x : *HoldOpen.Get())
+			{
+				auto RefHoldOpen = x.Value;
+				if(RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
+				{
+					FBarragePrimitive::TryGetTransformFromJolt(x.Value, Time); //returns a bool that can be used for debug.
+				}
+			}
 		}
 	}
 }
+
 
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to semantic changes. the Point is left in the UE space. 
