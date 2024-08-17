@@ -24,14 +24,8 @@ struct FBPhysicsInput
 		uint32 Sequence;//unused, likely needed for determinism.
 		PhysicsInputType Action;
 		JPH::Quat State;
-
-	//have mercy on me for this one.
-	operator FBInputPlacementNew()
-	{
-		static_assert(sizeof FBInputPlacementNew == sizeof FBPhysicsInput);
-		return *reinterpret_cast<FBInputPlacementNew*>(this);
-	};
-	FBPhysicsInput()
+	
+	explicit FBPhysicsInput()
 	{
 	//don't initialize anything. just trust me on this.	
 	}
@@ -43,10 +37,6 @@ struct FBPhysicsInput
 		Sequence = Seq;
 		Action = PhysicsInput;
 	};
-	static FBPhysicsInput* FromExistingMemory(FBInputPlacementNew move)
-	{
-		return new (&move) FBPhysicsInput();
-	}
 
 };
 

@@ -10,7 +10,19 @@ PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
 
+	
 
+
+void UBarrageDispatch::GrantFeed()
+{
+	FScopeLock GrantFeedLock(&GrowOnlyAccLock);
+
+	//TODO: expand if we need for rollback powers. could be sliiiick
+	JoltGameSim->ThreadAcc[ThreadAccTicker] = FWorldSimOwner::FeedMap(std::this_thread::get_id(), 1024);
+	
+	MyBARRAGEIndex = ThreadAccTicker;
+	++ThreadAccTicker;
+}
 
 UBarrageDispatch::UBarrageDispatch()
 {
@@ -65,24 +77,24 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t ti
 //this is because over time, the needs of these classes may diverge and multiply
 //and it's not clear to me that Shapefulness is going to actually be the defining shared
 //feature. I'm going to wait to refactor the types until testing is complete.
-FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, uint64 OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
 }
-FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
 }
 
-FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
+FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
 {
 	auto indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect.Object->Me = form;
@@ -93,7 +105,7 @@ FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarrage
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
-	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
+	const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey)
 {
 	using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
 	using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
@@ -261,35 +273,40 @@ TStatId UBarrageDispatch::GetStatId() const
 
 void UBarrageDispatch::StackUp()
 {
-	for(auto& x : ThreadAcc)
+	auto WorldSimOwner = JoltGameSim;
+	if(WorldSimOwner)
 	{
-		if(x.That != std::thread::id()) //if there IS a thread.
+		for(auto& x : WorldSimOwner->ThreadAcc)
 		{
-			while (!x.Queue->IsEmpty())
+			TSharedPtr<FWorldSimOwner::ThreadFeed> HoldOpen;
+			if( x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
 			{
-				auto input = FBPhysicsInput::FromExistingMemory(*x.Queue->Peek());
-				auto bID = JoltGameSim->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
-				if(input->Action == PhysicsInputType::Rotation)
+				while (HoldOpen && !HoldOpen->IsEmpty())
 				{
-					//prolly gonna wanna change this to add torque................... not sure.
-					JoltGameSim->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
+					auto input = HoldOpen->Peek();
+					auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
+					if(input->Action == PhysicsInputType::Rotation)
+					{
+						//prolly gonna wanna change this to add torque................... not sure.
+						WorldSimOwner->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
+					}
+					else if (input->Action == PhysicsInputType::OtherForce)
+					{
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					}
+					else if (input->Action == PhysicsInputType::Velocity)
+					{
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					}
+					else if(input->Action == PhysicsInputType::SelfMovement)
+					{
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					}
+					HoldOpen->Dequeue();
 				}
-				else if (input->Action == PhysicsInputType::OtherForce)
-				{
-					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
-				}
-				else if (input->Action == PhysicsInputType::Velocity)
-				{
-					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
-				}
-				else if(input->Action == PhysicsInputType::SelfMovement)
-				{
-					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
-				}
-				x.Queue->Dequeue();
 			}
-		}
 			
+		}
 	}
 }
 

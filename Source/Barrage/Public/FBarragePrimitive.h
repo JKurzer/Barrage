@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "CoreTypeKeys.h"
 #include "FBarrageKey.h"
 #include "FBShapeParams.h"
 
@@ -27,7 +28,7 @@ public:
 	//This breaks our type dependency by using the underlying hashkey instead of the artillery type.
 	//this is pretty risky, but it's basically necessary to avoid a dependency on artillery until we factor our types
 	//into a type plugin, which is a wild but not unexpected thing to do.
-	uint64_t KeyOutOfBarrage;
+	ObjectKey KeyOutOfBarrage;
 
 	//Tombstone state. Used to ensure that we don't nullity sliced. 
 	//0 is normal.
@@ -40,7 +41,7 @@ public:
 	uint32 tombstone; //4b 
 	FBShape Me; //4b
 
-	FBarragePrimitive(FBarrageKey Into, uint64 OutOf)
+	FBarragePrimitive(FBarrageKey Into, ObjectKey OutOf)
 	{
 		KeyIntoBarrage = Into;
 		KeyOutOfBarrage = OutOf;

@@ -4,7 +4,9 @@
 //there's other ways to do this, but the correct way is a namespace so far as I know.
 // see: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.4#namespaces
 #include "FBarrageKey.h"
-	PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
+#include "FBPhysicsInput.h"
+#include "Containers/CircularQueue.h"
+PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Jolt.h"
 #include "Jolt/RegisterTypes.h"
 #include "Jolt/Core/Factory.h"
@@ -207,7 +209,27 @@
 		//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
 		TSharedPtr< TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
 		PhysicsSystem physics_system;
+		typedef TCircularQueue<FBPhysicsInput> ThreadFeed;
+	
+		struct FeedMap
+		{
+			std::thread::id That = std::thread::id();
+			TSharedPtr<ThreadFeed> Queue = nullptr;
 
+			FeedMap()
+			{
+				That = std::thread::id();
+				Queue = nullptr;
+			}
+			FeedMap(std::thread::id MappedThread, uint16 MaxQueueDepth)
+			{
+				That = MappedThread;
+				Queue = MakeShareable(new ThreadFeed(MaxQueueDepth));
+			}
+		};
+		
+		FeedMap ThreadAcc[ALLOWED_THREADS_FOR_BARRAGE_PHYSICS];
+		
 		TSharedPtr<JobSystemThreadPool> job_system;
 		// Create mapping table from object layer to broadphase layer
 		// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!

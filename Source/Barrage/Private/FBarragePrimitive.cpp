@@ -12,7 +12,7 @@ FBarragePrimitive::~FBarragePrimitive()
 	//Only the CleanTombs function in dispatch actually releases the shared pointer on the dispatch side
 	//but an actor might hold a shared pointer to the primitive that represents it after that primitive has been
 	//popped out of this.
-	if(GlobalBarrage != nullptr)
+	if (GlobalBarrage != nullptr)
 	{
 		GlobalBarrage->FinalizeReleasePrimitive(KeyIntoBarrage);
 	}
@@ -25,16 +25,17 @@ FBarragePrimitive::~FBarragePrimitive()
 
 void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 {
-	if(IsNotNull(Target))
+	if (IsNotNull(Target))
 	{
-		if(GlobalBarrage)
+		if (GlobalBarrage)
 		{
-			if(MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim && MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
 			{
-				GlobalBarrage->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
-				FBPhysicsInput(Target, 0, PhysicsInputType::Rotation,
-					CoordinateUtils::ToBarrageRotation(Rotator)
-				)
+				HoldOpenGameSim->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+					FBPhysicsInput(Target, 0, PhysicsInputType::Rotation,
+					               CoordinateUtils::ToBarrageRotation(Rotator)
+					)
 				);
 			}
 		}
@@ -44,37 +45,47 @@ void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 //generally, this should be called from the same thread as update.
 bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target, uint64 Time)
 {
-	if(IsNotNull(Target))
+	if (IsNotNull(Target))
 	{
-		if(GlobalBarrage)
+		if (GlobalBarrage)
 		{
-			auto bID = GlobalBarrage->JoltGameSim->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
-			if(bID)
+			auto GameSimHoldOpen = GlobalBarrage->JoltGameSim;
+			if (GameSimHoldOpen)
 			{
-				if(GlobalBarrage->JoltGameSim->body_interface->IsActive(*bID))
+				auto bID = GameSimHoldOpen->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+				if (bID)
 				{
-					
-					//TODO: @Eliza, can we figure out if updating the transforms in place is threadsafe? that'd be vastly preferable
-					//TODO: figure out how to make this less.... horrid.
-					GlobalBarrage->GameTransformPump->Enqueue(UBarrageDispatch::TransformUpdate(
-						Target->KeyOutOfBarrage,
-						Time,
-						CoordinateUtils::FromJoltCoordinates(GlobalBarrage->JoltGameSim->body_interface->GetLinearVelocity(*bID)),
-						CoordinateUtils::FromJoltCoordinates(GlobalBarrage->JoltGameSim->body_interface->GetPosition(*bID)),
-						CoordinateUtils::FromJoltRotation(GlobalBarrage->JoltGameSim->body_interface->GetRotation(*bID))
-					));
+					if (GameSimHoldOpen->body_interface->IsActive(*bID))
+					{
+						auto HoldOpen = GlobalBarrage->GameTransformPump;
+
+						//TODO: @Eliza, can we figure out if updating the transforms in place is threadsafe? that'd be vastly preferable
+						//TODO: figure out how to make this less.... horrid.
+						if (HoldOpen)
+						{
+							HoldOpen->Enqueue(UBarrageDispatch::TransformUpdate(
+								Target->KeyOutOfBarrage,
+								Time,
+								CoordinateUtils::FromJoltCoordinates(
+									GameSimHoldOpen->body_interface->GetLinearVelocity(*bID)),
+								CoordinateUtils::FromJoltCoordinates(
+									GameSimHoldOpen->body_interface->GetPosition(*bID)),
+								CoordinateUtils::FromJoltRotation(GameSimHoldOpen->body_interface->GetRotation(*bID))
+							));
+						}
+					}
 					return true;
 				}
 			}
 		}
-		
 	}
 	return false;
 }
+
 FVector3d FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 {
 	//GlobalBarrage	
-	if(IsNotNull(Target))
+	if (IsNotNull(Target))
 	{
 		return FVector3d();
 	}
@@ -84,16 +95,18 @@ FVector3d FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 
 void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 {
-	if(IsNotNull(Target))
+	if (IsNotNull(Target))
 	{
-		if(GlobalBarrage)
+		if (GlobalBarrage)
 		{
-			if(MyBARRAGEIndex< ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim && MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
 			{
-				GlobalBarrage->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
-				FBPhysicsInput(Target, 0, PhysicsInputType::OtherForce,
-					CoordinateUtils::ToBarrageForce(Force)
-				)
+				HoldOpenGameSim->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+					FBPhysicsInput(Target, 0, PhysicsInputType::OtherForce,
+					               CoordinateUtils::ToBarrageForce(Force)
+					)
 				);
 			}
 		}

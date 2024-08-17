@@ -9,15 +9,11 @@
 
 #include "Chaos/Particles.h"
 #include "CapsuleTypes.h"
+#include "CoreTypeKeys.h"
 #include "FBarragePrimitive.h"
 #include "Containers/CircularQueue.h"
 #include "Containers/Deque.h"
 #include "BarrageDispatch.generated.h"
-
-struct FBInputPlacementNew
-{
-	char block[48];
-};
 
 enum LayersMap
 {
@@ -54,17 +50,10 @@ class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 	static inline constexpr float TickRateInDelta = 1.0 / 120.0;
 	
 public:
-	
-	typedef TCircularQueue<FBInputPlacementNew> ThreadFeed;
-	
-	struct FeedMap
-	{
-		std::thread::id That = std::thread::id();
-		TSharedPtr<ThreadFeed> Queue = nullptr;
-	};
+
 	struct TransformUpdate
 	{
-		uint64 ObjectKey;
+		ObjectKey ObjectKey;
 		uint64 sequence;
 		FVector3f Velocity;
 		FVector3f Position;
@@ -73,21 +62,12 @@ public:
 	uint8 ThreadAccTicker = 0;
 	typedef TCircularQueue<TransformUpdate> TransformUpdatesForGameThread;
 	TSharedPtr<TransformUpdatesForGameThread> GameTransformPump;
-	FeedMap ThreadAcc[ALLOWED_THREADS_FOR_BARRAGE_PHYSICS];
 	 //this value indicates you have none.
 	mutable FCriticalSection GrowOnlyAccLock;
 
 	// Why would I do it this way? It's fast and easy to debug, and we will probably need to force a thread
 	// order for determinism. this ensures there's a call point where we can institute that.
-	void GrantFeed()
-	{
-	FScopeLock GrantFeedLock(&GrowOnlyAccLock);
-		ThreadAcc[ThreadAccTicker].That = std::this_thread::get_id();
-		MyBARRAGEIndex = ThreadAccTicker;
-		//TODO: expand if we need for rollback powers. could be sliiiick
-		ThreadAcc[ThreadAccTicker].Queue = MakeShareable(new ThreadFeed(1024));
-		++ThreadAccTicker;
-	}
+	void GrantFeed();
 	UBarrageDispatch();
 	
 	virtual ~UBarrageDispatch() override;
@@ -98,10 +78,10 @@ public:
 
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
-	FBLet CreatePrimitive(FBBoxParams& Definition, uint64 Outkey, uint16 Layer);
-	FBLet CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer);
-	FBLet CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer);
-	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey);
+	FBLet CreatePrimitive(FBBoxParams& Definition, ObjectKey Outkey, uint16 Layer);
+	FBLet CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer);
+	FBLet CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer);
+	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey);
 	FBLet GetShapeRef(FBarrageKey Existing) const;
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
@@ -136,7 +116,7 @@ protected:
 
 private:
 	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleOwnerMapping;
-	FBLet ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
+	FBLet ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
 
