@@ -29,9 +29,10 @@ void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 	{
 		if (GlobalBarrage)
 		{
-			if (MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim && MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
 			{
-				GlobalBarrage->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+				HoldOpenGameSim->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
 					FBPhysicsInput(Target, 0, PhysicsInputType::Rotation,
 					               CoordinateUtils::ToBarrageRotation(Rotator)
 					)
@@ -98,9 +99,11 @@ void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 	{
 		if (GlobalBarrage)
 		{
-			if (MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim && MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
 			{
-				GlobalBarrage->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+				HoldOpenGameSim->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
 					FBPhysicsInput(Target, 0, PhysicsInputType::OtherForce,
 					               CoordinateUtils::ToBarrageForce(Force)
 					)

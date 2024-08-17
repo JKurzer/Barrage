@@ -10,7 +10,19 @@ PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
 
+	
 
+
+void UBarrageDispatch::GrantFeed()
+{
+	FScopeLock GrantFeedLock(&GrowOnlyAccLock);
+
+	//TODO: expand if we need for rollback powers. could be sliiiick
+	JoltGameSim->ThreadAcc[ThreadAccTicker] = FWorldSimOwner::FeedMap(std::this_thread::get_id(), 1024);
+	
+	MyBARRAGEIndex = ThreadAccTicker;
+	++ThreadAccTicker;
+}
 
 UBarrageDispatch::UBarrageDispatch()
 {
@@ -261,30 +273,31 @@ TStatId UBarrageDispatch::GetStatId() const
 
 void UBarrageDispatch::StackUp()
 {
-	for(auto& x : ThreadAcc)
+	auto WorldSimOwner = JoltGameSim;
+	for(auto& x : WorldSimOwner->ThreadAcc)
 	{
 		if(x.That != std::thread::id()) //if there IS a thread.
 		{
-			while (!x.Queue->IsEmpty())
+			while (x.Queue && !x.Queue->IsEmpty())
 			{
-				auto input = FBPhysicsInput::FromExistingMemory(*x.Queue->Peek());
-				auto bID = JoltGameSim->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
+				auto input = x.Queue->Peek();
+				auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
 				if(input->Action == PhysicsInputType::Rotation)
 				{
 					//prolly gonna wanna change this to add torque................... not sure.
-					JoltGameSim->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
+					WorldSimOwner->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
 				}
 				else if (input->Action == PhysicsInputType::OtherForce)
 				{
-					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
 				else if (input->Action == PhysicsInputType::Velocity)
 				{
-					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
 				else if(input->Action == PhysicsInputType::SelfMovement)
 				{
-					JoltGameSim->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
 				x.Queue->Dequeue();
 			}
