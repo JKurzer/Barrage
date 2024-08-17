@@ -276,11 +276,12 @@ void UBarrageDispatch::StackUp()
 	auto WorldSimOwner = JoltGameSim;
 	for(auto& x : WorldSimOwner->ThreadAcc)
 	{
-		if(x.That != std::thread::id()) //if there IS a thread.
+		auto HoldOpen = x.Queue;
+		if(HoldOpen && x.That != std::thread::id()) //if there IS a thread.
 		{
-			while (x.Queue && !x.Queue->IsEmpty())
+			while (HoldOpen && !HoldOpen->IsEmpty())
 			{
-				auto input = x.Queue->Peek();
+				auto input = HoldOpen->Peek();
 				auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
 				if(input->Action == PhysicsInputType::Rotation)
 				{
@@ -299,7 +300,7 @@ void UBarrageDispatch::StackUp()
 				{
 					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
 				}
-				x.Queue->Dequeue();
+				HoldOpen->Dequeue();
 			}
 		}
 			
