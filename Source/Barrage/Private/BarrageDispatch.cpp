@@ -274,36 +274,39 @@ TStatId UBarrageDispatch::GetStatId() const
 void UBarrageDispatch::StackUp()
 {
 	auto WorldSimOwner = JoltGameSim;
-	for(auto& x : WorldSimOwner->ThreadAcc)
+	if(WorldSimOwner)
 	{
-		auto HoldOpen = x.Queue;
-		if(HoldOpen && x.That != std::thread::id()) //if there IS a thread.
+		for(auto& x : WorldSimOwner->ThreadAcc)
 		{
-			while (HoldOpen && !HoldOpen->IsEmpty())
+			TSharedPtr<FWorldSimOwner::ThreadFeed> HoldOpen;
+			if( x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
 			{
-				auto input = HoldOpen->Peek();
-				auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
-				if(input->Action == PhysicsInputType::Rotation)
+				while (HoldOpen && !HoldOpen->IsEmpty())
 				{
-					//prolly gonna wanna change this to add torque................... not sure.
-					WorldSimOwner->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
+					auto input = HoldOpen->Peek();
+					auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
+					if(input->Action == PhysicsInputType::Rotation)
+					{
+						//prolly gonna wanna change this to add torque................... not sure.
+						WorldSimOwner->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
+					}
+					else if (input->Action == PhysicsInputType::OtherForce)
+					{
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					}
+					else if (input->Action == PhysicsInputType::Velocity)
+					{
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					}
+					else if(input->Action == PhysicsInputType::SelfMovement)
+					{
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+					}
+					HoldOpen->Dequeue();
 				}
-				else if (input->Action == PhysicsInputType::OtherForce)
-				{
-					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
-				}
-				else if (input->Action == PhysicsInputType::Velocity)
-				{
-					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
-				}
-				else if(input->Action == PhysicsInputType::SelfMovement)
-				{
-					WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
-				}
-				HoldOpen->Dequeue();
 			}
-		}
 			
+		}
 	}
 }
 
