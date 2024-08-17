@@ -145,5 +145,4 @@ FWorldSimOwner::~FWorldSimOwner()
 	// Destroy the factory
 	delete Factory::sInstance;
 	Factory::sInstance = nullptr;
-	GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Green, TEXT("Goodnight, Barrage!"));
 }
