@@ -65,24 +65,24 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t ti
 //this is because over time, the needs of these classes may diverge and multiply
 //and it's not clear to me that Shapefulness is going to actually be the defining shared
 //feature. I'm going to wait to refactor the types until testing is complete.
-FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, uint64 OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, uint64 OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
 }
-FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, uint64 OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
 }
 
-FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
+FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
 {
 	auto indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect.Object->Me = form;
@@ -93,7 +93,7 @@ FBLet UBarrageDispatch::ManagePointers(uint64 OutKey, FBarrageKey temp, FBarrage
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
-	const UStaticMeshComponent* StaticMeshComponent, uint64 Outkey, FBarrageKey& InKey)
+	const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey)
 {
 	using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
 	using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
