@@ -87,7 +87,6 @@ public:
 protected:
 	double JoltHalfHeightOfCylinder;
 	double JoltRadius;
-	double bound3; 
 };
 
 class FBMeshParams
