@@ -1,6 +1,5 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
-#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 
 FWorldSimOwner::FWorldSimOwner(float cDeltaTime)
 {
@@ -143,6 +142,6 @@ FWorldSimOwner::~FWorldSimOwner()
 	UnregisterTypes();
 	
 	// Destroy the factory
-	delete Factory::sInstance;
+	//delete Factory::sInstance; // somehow, this delete is toxic.
 	Factory::sInstance = nullptr;
 }

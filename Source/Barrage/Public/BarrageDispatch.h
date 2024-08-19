@@ -130,7 +130,6 @@ private:
 	{
 		//free tomb at offset - TombstoneInitialMinimum, fulfilling our promised minimum.
 		auto HoldOpen = Tombs;
-		//TODO: this was about as safe as it looked, lol.
 		auto& Mausoleum = HoldOpen[(TombOffset - TombstoneInitialMinimum) % (TombstoneInitialMinimum + 1)];
 		if(Mausoleum)
 		{

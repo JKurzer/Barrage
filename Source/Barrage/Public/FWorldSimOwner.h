@@ -19,6 +19,7 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Body/BodyActivationListener.h"
 #include "Jolt/ConfigurationString.h"
+#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 	PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 	// STL includes

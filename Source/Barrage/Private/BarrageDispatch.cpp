@@ -65,6 +65,8 @@ void UBarrageDispatch::Deinitialize()
 	{
 		x = nullptr;
 	}
+	GameTransformPump = nullptr;
+	
 	JoltGameSim = nullptr;
 }
 
@@ -262,7 +264,11 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 {
-	JoltGameSim->FinalizeReleasePrimitive(BarrageKey);
+	auto HoldOpen = JoltGameSim;
+	if(HoldOpen && JoltGameSim)
+	{
+		HoldOpen->FinalizeReleasePrimitive(BarrageKey);
+	}
 }
 
 
