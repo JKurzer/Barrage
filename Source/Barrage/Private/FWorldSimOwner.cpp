@@ -132,16 +132,19 @@ void FWorldSimOwner::StepSimulation()
 	constexpr int cCollisionSteps = 1;
 
 	// Step the world
-	physics_system.Update(DeltaTime, cCollisionSteps, Allocator.Get(), job_system.Get());
-
-	//TODO: tombstone handling
+	auto AllocHoldOpen = Allocator;
+	auto JobHoldOpen = job_system;
+	if(AllocHoldOpen && JobHoldOpen)
+	{
+		physics_system.Update(DeltaTime, cCollisionSteps, AllocHoldOpen.Get(), JobHoldOpen.Get());
+	}
 }
 
 FWorldSimOwner::~FWorldSimOwner()
 {
-	UnregisterTypes();
 	
-	// Destroy the factory
-	//delete Factory::sInstance; // somehow, this delete is toxic.
+	job_system.Reset();
+	UnregisterTypes();
+	delete Factory::sInstance; // somehow, this delete is toxic.
 	Factory::sInstance = nullptr;
 }
