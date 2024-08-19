@@ -82,14 +82,28 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target, uint64 Time)
 	return false;
 }
 
-FVector3d FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
+FVector3f FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 {
 	//GlobalBarrage	
 	if (IsNotNull(Target))
 	{
-		return FVector3d();
+		if (GlobalBarrage)
+		{
+			auto GameSimHoldOpen = GlobalBarrage->JoltGameSim;
+			if (GameSimHoldOpen)
+			{
+				auto bID = GameSimHoldOpen->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+				if (bID)
+				{
+					if (GameSimHoldOpen->body_interface->IsActive(*bID))
+					{
+						return CoordinateUtils::FromJoltCoordinates(GameSimHoldOpen->body_interface->GetCenterOfMassPosition(*bID));
+					}
+				}
+			}
+		}
 	}
-	return FVector3d::ZeroVector;
+	return FVector3f::ZeroVector;
 }
 
 
