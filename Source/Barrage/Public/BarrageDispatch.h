@@ -9,7 +9,7 @@
 
 #include "Chaos/Particles.h"
 #include "CapsuleTypes.h"
-#include "CoreTypeKeys.h"
+#include "SkeletonTypes.h"
 #include "FBarragePrimitive.h"
 #include "Containers/CircularQueue.h"
 #include "Containers/Deque.h"

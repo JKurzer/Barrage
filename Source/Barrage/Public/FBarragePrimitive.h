@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "CoreTypeKeys.h"
+#include "SkeletonTypes.h"
 #include "FBarrageKey.h"
 #include "FBShapeParams.h"
 
