@@ -142,9 +142,17 @@ void FWorldSimOwner::StepSimulation()
 
 FWorldSimOwner::~FWorldSimOwner()
 {
-	
-	job_system.Reset();
 	UnregisterTypes();
-	delete Factory::sInstance; // somehow, this delete is toxic.
-	Factory::sInstance = nullptr;
+	//delete Factory::sInstance; // somehow, this delete is toxic.
+	//Factory::sInstance = nullptr;
+
+
+	//this is the canonical order.
+	//their tests use RTTI for the factory. Not sure how go about that right this sec.
+	// delete mTest;
+	// delete mContactListener;
+	// delete mPhysicsSystem;
+	// delete mJobSystemValidating;
+	// delete mJobSystem;
+	// delete mTempAllocator;
 }

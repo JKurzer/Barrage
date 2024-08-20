@@ -109,6 +109,13 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 
 	class FWorldSimOwner
 	{
+	public:
+		//members are destructed first in, last out.
+		//https://stackoverflow.com/questions/2254263/order-of-member-constructor-and-destructor-calls
+		const uint AllocationArenaSize = 100 * 1024 * 1024;
+		TSharedPtr<TempAllocatorImpl> Allocator;
+		
+		
 		class BPLayerInterfaceImpl final : public BroadPhaseLayerInterface
 		{
 		public:
@@ -209,7 +216,6 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 	public:
 		//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
 		TSharedPtr< TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
-		PhysicsSystem physics_system;
 		typedef TCircularQueue<FBPhysicsInput> ThreadFeed;
 	
 		struct FeedMap
@@ -276,9 +282,10 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 		// number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
 		// Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
 		const uint cMaxContactConstraints = 16384;
-		const uint AllocationArenaSize = 100 * 1024 * 1024;
-		TSharedPtr<TempAllocatorImpl> Allocator;
 
+
+		//do not move this up. see C++ standard ~ 12.6.2
+		PhysicsSystem physics_system;
 		FWorldSimOwner(float cDeltaTime);
 
 		//we could use type indirection or inheritance, but the fact of the matter is that this is much easier
