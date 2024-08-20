@@ -63,7 +63,7 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target, uint64 Time)
 						//TODO: figure out how to make this less.... horrid.
 						if (HoldOpen)
 						{
-							HoldOpen->Enqueue(UBarrageDispatch::TransformUpdate(
+							HoldOpen->Enqueue(TransformUpdate(
 								Target->KeyOutOfBarrage,
 								Time,
 								CoordinateUtils::FromJoltCoordinates(

@@ -21,8 +21,9 @@ enum PhysicsInputType
 struct FBPhysicsInput
 {
 		FBLet Target;
-		uint32 Sequence;//unused, likely needed for determinism.
+		uint64 Sequence;//unused, likely needed for determinism.
 		PhysicsInputType Action;
+		uint32 metadata;
 		JPH::Quat State;
 	
 	explicit FBPhysicsInput()
@@ -39,4 +40,3 @@ struct FBPhysicsInput
 	};
 
 };
-

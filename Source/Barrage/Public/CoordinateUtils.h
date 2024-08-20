@@ -1,14 +1,14 @@
 ﻿#pragma once
 PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Jolt.h"
-#include "Jolt/RegisterTypes.h"
 #include "Jolt/Math/Quat.h"
 #include "Jolt/Math/Vec3.h"
-PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 using namespace JPH;
 
 // If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
 using namespace JPH::literals;
+PRAGMA_POP_PLATFORM_DEFAULT_PACKING
+
 
 class CoordinateUtils
 {

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FBarrage: public IModuleInterface
+class FBarrageModule: public IModuleInterface
 {
 public:
 

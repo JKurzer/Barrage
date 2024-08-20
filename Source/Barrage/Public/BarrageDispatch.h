@@ -1,18 +1,22 @@
 #pragma once
 
-#include <thread>
-
 #include "CoreMinimal.h"
-#include "Chaos/TriangleMeshImplicitObject.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "FBarrageKey.h"
+#include "SkeletonTypes.h"
 
+struct TransformUpdate
+{
+	ObjectKey ObjectKey;
+	uint64 sequence;
+	FVector3f Velocity;
+	FVector3f Position;
+	FQuat4f Rotation;// this alignment looks wrong. Like outright wrong.
+};
+#include "FBarrageKey.h"
 #include "Chaos/Particles.h"
 #include "CapsuleTypes.h"
-#include "SkeletonTypes.h"
 #include "FBarragePrimitive.h"
 #include "Containers/CircularQueue.h"
-#include "Containers/Deque.h"
 #include "BarrageDispatch.generated.h"
 
 enum LayersMap
@@ -51,14 +55,7 @@ class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 	
 public:
 
-	struct TransformUpdate
-	{
-		ObjectKey ObjectKey;
-		uint64 sequence;
-		FVector3f Velocity;
-		FVector3f Position;
-		FQuat4f Rotation;// this alignment looks wrong. Like outright wrong.
-	};
+
 	uint8 ThreadAccTicker = 0;
 	typedef TCircularQueue<TransformUpdate> TransformUpdatesForGameThread;
 	TSharedPtr<TransformUpdatesForGameThread> GameTransformPump;

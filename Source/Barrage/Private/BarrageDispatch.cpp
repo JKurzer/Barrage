@@ -1,11 +1,7 @@
 #include "BarrageDispatch.h"
 #include "FWorldSimOwner.h"
-#include "PhysicsEngine/BodySetup.h"
 #include "CoordinateUtils.h"
 #include "FBPhysicsInput.h"
-PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
-PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
@@ -32,6 +28,7 @@ UBarrageDispatch::~UBarrageDispatch()
 {
 	//now that all primitives are destructed
 	FBarragePrimitive::GlobalBarrage = nullptr;
+	
 }
 
 void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
@@ -67,7 +64,6 @@ void UBarrageDispatch::Deinitialize()
 	}
 	GameTransformPump = nullptr;
 	
-	JoltGameSim = nullptr;
 }
 
 void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp)
@@ -109,88 +105,7 @@ FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarr
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey)
 {
-	using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
-	using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
-	using ::CoordinateUtils;
-	if(!StaticMeshComponent) return nullptr;
-	if(!StaticMeshComponent->GetStaticMesh()) return nullptr;
-	if(!StaticMeshComponent->GetStaticMesh()->GetRenderData()) return nullptr;
-	UBodySetup* body = StaticMeshComponent->GetStaticMesh()->GetBodySetup();
-	if(!body || body->CollisionTraceFlag != CTF_UseComplexAsSimple)
-	{
-		return nullptr; // we don't accept anything but complex or primitive yet.
-		//simple collision tends to use primitives, in which case, don't call this
-		//or compound shapes which will get added back in.
-	}
-
-	auto& complex = StaticMeshComponent->GetStaticMesh()->ComplexCollisionMesh;
-	auto collbody = complex->GetBodySetup();
-	if(collbody == nullptr)
-	{
-		return nullptr;
-	}
-
-	//Here we go!
-	auto& MeshSet = collbody->TriMeshGeometries;
-	JPH::VertexList JoltVerts;
-	JPH::IndexedTriangleList JoltIndexedTriangles;
-	uint32 tris = 0;
-	for(auto& Mesh : MeshSet)
-	{
-		tris += Mesh->Elements().GetNumTriangles();
-	}
-	JoltVerts.reserve(tris);
-	JoltIndexedTriangles.reserve(tris);
-	for( auto& Mesh : MeshSet)
-	{
-		//indexed triangles are made by collecting the vertexes, then generating triples describing the triangles.
-		//this allows the heavier vertices to be stored only once, rather than each time they are used. for large models
-		//like terrain, this can be extremely significant. though, it's not truly clear to me if it's worth it.
-		auto& VertToTriBuffers = Mesh->Elements();
-		auto& Verts = Mesh->Particles().X();
-		if(VertToTriBuffers.RequiresLargeIndices())
-		{
-			for(auto& aTri : VertToTriBuffers.GetLargeIndexBuffer())
-			{
-				JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
-			}
-		}
-		else
-		{
-			for(auto& aTri : VertToTriBuffers.GetSmallIndexBuffer())
-			{
-				JoltIndexedTriangles.push_back(IndexedTriangle(aTri[2], aTri[1], aTri[0]));
-			}
-		}
-
-		for(auto& vtx : Verts)
-		{
-			//need to figure out how to defactor this without breaking typehiding or having to create a bunch of util.h files.
-			//though, tbh, the util.h is the play. TODO: util.h ?
-			JoltVerts.push_back(CoordinateUtils::ToJoltCoordinates(vtx));
-		}
-	}
-	JPH::MeshShapeSettings FullMesh(JoltVerts, JoltIndexedTriangles);
-	//just the last boiler plate for now.
-	JPH::ShapeSettings::ShapeResult err = FullMesh.Create();
-	if(err.HasError())
-	{
-		return nullptr;
-	}
-	//TODO: should we be holding the shape ref in gamesim owner?
-	auto& shape = err.Get();
-	BodyCreationSettings meshbody;
-	BodyCreationSettings creation_settings;
-	creation_settings.mMotionType = EMotionType::Static;
-	creation_settings.mObjectLayer = Layers::NON_MOVING;
-	creation_settings.mPosition = CoordinateUtils::ToJoltCoordinates(Definition.point);
-	creation_settings.mFriction = 0.5f;
-	creation_settings.SetShape(shape);
-	auto bID = JoltGameSim->body_interface->CreateAndAddBody(creation_settings, EActivation::Activate);
-
-	JoltGameSim->BarrageToJoltMapping->Add(InKey, bID);
-	
-	auto shared = MakeShareable(new FBarragePrimitive(InKey, Outkey));
+	auto shared =  JoltGameSim->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey, InKey);
 	JoltBodyLifecycleOwnerMapping->Add(InKey, shared);
 	return shared;
 }

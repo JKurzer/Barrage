@@ -8,8 +8,10 @@ FWorldSimOwner::FWorldSimOwner(float cDeltaTime)
 	// This needs to be done before any other Jolt function is called.
 	BarrageToJoltMapping = MakeShareable(new TMap<FBarrageKey, BodyID>());
 	RegisterDefaultAllocator();
-
+	contact_listener = MakeShareable(new MyContactListener());
+	body_activation_listener = MakeShareable(new MyBodyActivationListener());
 	Allocator = MakeShareable(new TempAllocatorImpl(AllocationArenaSize));
+	physics_system = MakeShareable(new PhysicsSystem());
 	// Install trace and assert callbacks
 	Trace = TraceImpl;
 	JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;)
@@ -29,25 +31,25 @@ FWorldSimOwner::FWorldSimOwner(float cDeltaTime)
 	job_system = MakeShareable(
 		new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1));
 	// Now we can create the actual physics system.
-	physics_system.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints,
+	physics_system->Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints,
 	                    broad_phase_layer_interface, object_vs_broadphase_layer_filter,
 	                    object_vs_object_layer_filter);
 
 
-	physics_system.SetBodyActivationListener(&body_activation_listener);
+	physics_system->SetBodyActivationListener( body_activation_listener.Get());
 
 
-	physics_system.SetContactListener(&contact_listener);
+	physics_system->SetContactListener(contact_listener.Get());
 
 	// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
 	// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
-	body_interface = &physics_system.GetBodyInterface();
+	body_interface = &physics_system->GetBodyInterface();
 
 
 	// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
 	// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
 	// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-	physics_system.OptimizeBroadPhase();
+	physics_system->OptimizeBroadPhase();
 
 	// here's Andrea's transform into jolt.
 	//	https://youtu.be/jhCupKFly_M?si=umi0zvJer8NymGzX&t=438
@@ -136,23 +138,24 @@ void FWorldSimOwner::StepSimulation()
 	auto JobHoldOpen = job_system;
 	if(AllocHoldOpen && JobHoldOpen)
 	{
-		physics_system.Update(DeltaTime, cCollisionSteps, AllocHoldOpen.Get(), JobHoldOpen.Get());
+		physics_system->Update(DeltaTime, cCollisionSteps, AllocHoldOpen.Get(), JobHoldOpen.Get());
 	}
 }
 
 FWorldSimOwner::~FWorldSimOwner()
 {
+	
 	UnregisterTypes();
-	//delete Factory::sInstance; // somehow, this delete is toxic.
-	//Factory::sInstance = nullptr;
+	delete Factory::sInstance; // somehow, this delete is toxic.
+	Factory::sInstance = nullptr;
 
 
 	//this is the canonical order.
 	//their tests use RTTI for the factory. Not sure how go about that right this sec.
 	// delete mTest;
-	// delete mContactListener;
-	// delete mPhysicsSystem;
-	// delete mJobSystemValidating;
-	// delete mJobSystem;
-	// delete mTempAllocator;
+	body_activation_listener.Reset();
+	contact_listener.Reset();
+	physics_system.Reset();
+	job_system.Reset();
+	Allocator.Reset();
 }
