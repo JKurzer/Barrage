@@ -1,12 +1,5 @@
 #pragma once
 #include "SkeletonTypes.h"
-
-
-namespace JOLT
-{
-	class FWorldSimOwner;
-}
-
 struct TransformUpdate
 {
 	ObjectKey ObjectKey;
@@ -20,8 +13,6 @@ struct TransformUpdate
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-
-
 #include "FBarrageKey.h"
 #include "Chaos/Particles.h"
 #include "CapsuleTypes.h"
@@ -31,9 +22,9 @@ struct TransformUpdate
 
 enum LayersMap
 {
-	 NON_MOVING = 0,
-MOVING = 1,
-NUM_LAYERS = 2
+	NON_MOVING = 0,
+	MOVING = 1,
+	NUM_LAYERS = 2
 };
 
 class BARRAGE_API FBarrageBounder
@@ -49,7 +40,12 @@ public:
 	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
 };
 
+namespace JOLT
+{
+	class FWorldSimOwner;
+}
 
+using TransformUpdatesForGameThread = TCircularQueue<TransformUpdate>;
 #define ALLOWED_THREADS_FOR_BARRAGE_PHYSICS 64
 //if we could make a promise about when threads are allocated, we could probably get rid of this
 //since the accumulator is in the world subsystem and so gets cleared when the world spins down.
@@ -68,7 +64,6 @@ public:
 
 
 	uint8 ThreadAccTicker = 0;
-	typedef TCircularQueue<TransformUpdate> TransformUpdatesForGameThread;
 	TSharedPtr<TransformUpdatesForGameThread> GameTransformPump;
 	 //this value indicates you have none.
 	mutable FCriticalSection GrowOnlyAccLock;

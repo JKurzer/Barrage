@@ -1,4 +1,6 @@
 #include "BarrageDispatch.h"
+#include "IsolatedJoltIncludes.h"
+
 #include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
 #include "FBPhysicsInput.h"

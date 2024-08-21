@@ -3,42 +3,18 @@
 //unity build isn't fond of this, but we really want to completely contain these types and also prevent any collisions.
 //there's other ways to do this, but the correct way is a namespace so far as I know.
 // see: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.4#namespaces
-#include "CoordinateUtils.h"
-#include "FBarrageKey.h"
-#include "FBPhysicsInput.h"
+
+
 #include "Containers/CircularQueue.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
-
+#include "CoordinateUtils.h"
 #include "FBShapeParams.h"
-THIRD_PARTY_INCLUDES_START
-PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
+#include "FBarrageKey.h"
+#include "FBPhysicsInput.h"
 
-#include "mimalloc.h"
-#include "Jolt/Jolt.h"
-#include "Jolt/RegisterTypes.h"
-#include "Jolt/Core/Factory.h"
-#include "Jolt/Core/TempAllocator.h"
-#include "Jolt/Core/JobSystemThreadPool.h"
-#include "Jolt/Physics/PhysicsSettings.h"
-#include "Jolt/Physics/PhysicsSystem.h"
-#include "Jolt/Physics/Collision/Shape/BoxShape.h"
-#include "Jolt/Physics/Collision/Shape/SphereShape.h"
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
-#include "Jolt/Physics/Body/BodyCreationSettings.h"
-#include "Jolt/Physics/Body/BodyActivationListener.h"
-#include "Jolt/ConfigurationString.h"
-#include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
-// Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
-JPH_SUPPRESS_WARNINGS
-
-PRAGMA_POP_PLATFORM_DEFAULT_PACKING
-THIRD_PARTY_INCLUDES_END
-// STL includes
-
+#include "IsolatedJoltIncludes.h"
 #include "PhysicsEngine/BodySetup.h"
 
-#include <thread>
 // All Jolt symbols are in the JPH namespace
 
 // Callback for traces, connect this to your own trace function if you have one

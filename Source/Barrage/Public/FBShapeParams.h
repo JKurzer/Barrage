@@ -41,50 +41,29 @@
 //remember to convert https://youtu.be/jhCupKFly_M?si=aoBCNbbAA9DzDPyy&t=438
 
 
-
 //REMINDER: these use UE type conventions and so are in UE space.
 //I bounced back and forth on this a bunch.
 class FBBoxParams
 {
-	
 public:
-	friend class FBarrageBounder;
-	friend class CoordinateUtils;
-	friend class JOLT::FWorldSimOwner;
-	friend class UBarrageDispatch;
-FVector3d point;
+	FVector3d point;
 
-protected:
 	double JoltX;
 	double JoltY;
-	double JoltZ; 
+	double JoltZ;
 };
 
 class FBSphereParams
 {
-	
 public:
-	friend class FBarrageBounder;
-	friend class CoordinateUtils;
-	friend class JOLT::FWorldSimOwner;
-	friend class UBarrageDispatch;
 	FVector3d point;
-
-protected:
 	double JoltRadius;
 };
 
 class FBCapParams
 {
-	
 public:
-	friend class FBarrageBounder;
-	friend class CoordinateUtils;
-	friend class JOLT::FWorldSimOwner;
-	friend class UBarrageDispatch;
 	FVector3d point;
-
-protected:
 	double JoltHalfHeightOfCylinder;
 	double JoltRadius;
 	double taper;
@@ -92,16 +71,10 @@ protected:
 
 class FBMeshParams
 {
-	
 public:
-	friend class FBarrageBounder;
-	friend class CoordinateUtils;
-	friend class JOLT::FWorldSimOwner;
-	friend class UBarrageDispatch;
 	FVector3d point;
 	double scale;
 };
 
 //this should evaluate in most IDEs, allowing you to see the size if you need to make changes. try not to need to.
 //constexpr const static int size = sizeof(FBShapeParams);
-

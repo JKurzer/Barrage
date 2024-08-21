@@ -1,11 +1,7 @@
 ﻿#pragma once
 #include "BarrageDispatch.h"
 
-PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
-#include "Jolt/Jolt.h"
-#include "Jolt/Math/Quat.h"
-#include "mimalloc.h"
-PRAGMA_POP_PLATFORM_DEFAULT_PACKING
+
 
 enum PhysicsInputType
 {

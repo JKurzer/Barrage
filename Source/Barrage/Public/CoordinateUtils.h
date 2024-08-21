@@ -1,12 +1,5 @@
 ﻿#pragma once
-PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
-
-#include "mimalloc.h"
-#include "Jolt/Jolt.h"
-#include "Jolt/Math/Quat.h"
-#include "Jolt/Math/Vec3.h"
-
-PRAGMA_POP_PLATFORM_DEFAULT_PACKING
+#include "IsolatedJoltIncludes.h"
 
 
 class CoordinateUtils
