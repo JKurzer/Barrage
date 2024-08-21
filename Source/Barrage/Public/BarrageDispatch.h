@@ -1,17 +1,21 @@
 #pragma once
-
-#include "CoreMinimal.h"
-#include "Subsystems/WorldSubsystem.h"
 #include "SkeletonTypes.h"
 
 struct TransformUpdate
 {
 	ObjectKey ObjectKey;
 	uint64 sequence;
-	FVector3f Velocity;
-	FVector3f Position;
 	FQuat4f Rotation;// this alignment looks wrong. Like outright wrong.
+	FVector3f Velocity;
+	uint32 spline1;
+	FVector3f Position;
+	uint32 spline2;
 };
+
+#include "CoreMinimal.h"
+#include "Subsystems/WorldSubsystem.h"
+
+
 #include "FBarrageKey.h"
 #include "Chaos/Particles.h"
 #include "CapsuleTypes.h"

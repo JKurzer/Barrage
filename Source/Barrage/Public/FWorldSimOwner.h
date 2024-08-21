@@ -10,8 +10,10 @@
 #include "Chaos/TriangleMeshImplicitObject.h"
 
 #include "FBShapeParams.h"
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
+THIRD_PARTY_INCLUDES_START
 PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
+
+#include "mimalloc.h"
 #include "Jolt/Jolt.h"
 #include "Jolt/RegisterTypes.h"
 #include "Jolt/Core/Factory.h"
@@ -21,6 +23,7 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Body/BodyActivationListener.h"
 #include "Jolt/ConfigurationString.h"
@@ -33,15 +36,13 @@ using namespace JPH;
 // If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
 using namespace JPH::literals;
 PRAGMA_POP_PLATFORM_DEFAULT_PACKING
+THIRD_PARTY_INCLUDES_END
 // STL includes
 
 #include "PhysicsEngine/BodySetup.h"
-#include <iostream>
-#include <cstdarg>
-#include <thread>
-#include <math.h>
-// All Jolt symbols are in the JPH namespace
 
+#include <thread>
+// All Jolt symbols are in the JPH namespace
 
 // Callback for traces, connect this to your own trace function if you have one
 static void TraceImpl(const char* inFMT, ...)
