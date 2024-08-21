@@ -31,10 +31,7 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
 // Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
 JPH_SUPPRESS_WARNINGS
-using namespace JPH;
 
-// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
-using namespace JPH::literals;
 PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 THIRD_PARTY_INCLUDES_END
 // STL includes
@@ -57,11 +54,10 @@ static void TraceImpl(const char* inFMT, ...)
 
 
 // We're also using STL classes in this example
-using namespace std;
 #ifdef JPH_ENABLE_ASSERTS
 
 // Callback for asserts, connect this to your own assert handler if you have one
-static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine)
+static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine)
 {
 	// Breakpoint
 	return true;
@@ -77,52 +73,66 @@ static bool AssertFailedImpl(const char* inExpression, const char* inMessage, co
 // but only if you do collision testing).
 namespace Layers
 {
-	static constexpr ObjectLayer NON_MOVING = 0;
-	static constexpr ObjectLayer MOVING = 1;
-	static constexpr ObjectLayer NUM_LAYERS = 2;
+	static constexpr JPH::ObjectLayer NON_MOVING = 0;
+	static constexpr JPH::ObjectLayer MOVING = 1;
+	static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
 };
 
-/// Class that determines if two object layers can collide
-class ObjectLayerPairFilterImpl : public ObjectLayerPairFilter
+
+namespace JOLT
 {
-public:
-	virtual bool ShouldCollide(ObjectLayer inObject1, ObjectLayer inObject2) const override
+
+using namespace JPH;
+using namespace JPH::literals;
+
+	namespace BroadPhaseLayers
 	{
-		switch (inObject1)
-		{
-		case Layers::NON_MOVING:
-			return inObject2 == Layers::MOVING; // Non moving only collides with moving
-		case Layers::MOVING:
-			return true; // Moving collides with everything
-		default:
-			JPH_ASSERT(false);
-			return false;
-		}
-	}
-};
-
-// Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
-// a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
-// You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
-// many object layers you'll be creating many broad phase trees, which is not efficient. If you want to fine tune
-// your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
-namespace BroadPhaseLayers
-{
-	static constexpr BroadPhaseLayer NON_MOVING(0);
-	static constexpr BroadPhaseLayer MOVING(1);
-	static constexpr uint NUM_LAYERS(2);
-};
-
-
+		static constexpr BroadPhaseLayer NON_MOVING(0);
+		static constexpr BroadPhaseLayer MOVING(1);
+		static constexpr uint NUM_LAYERS(2);
+	};
 class FWorldSimOwner
 {
+
+	// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
+
+
+
+	
 public:
 	//members are destructed first in, last out.
 	//https://stackoverflow.com/questions/2254263/order-of-member-constructor-and-destructor-calls
+	
+
 	const uint AllocationArenaSize = 100 * 1024 * 1024;
 	TSharedPtr<TempAllocatorImpl> Allocator;
 
+	// Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
+	// a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
+	// You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
+	// many object layers you'll be creating many broad phase trees, which is not efficient. If you want to fine tune
+	// your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
 
+
+	/// Class that determines if two object layers can collide
+	class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
+	{
+	public:
+		virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override
+		{
+			switch (inObject1)
+			{
+			case Layers::NON_MOVING:
+				return inObject2 == Layers::MOVING; // Non moving only collides with moving
+			case Layers::MOVING:
+				return true; // Moving collides with everything
+			default:
+				JPH_ASSERT(false);
+				return false;
+			}
+		}
+	};
+	
 	class BPLayerInterfaceImpl final : public BroadPhaseLayerInterface
 	{
 	public:
@@ -434,3 +444,5 @@ public:
 
 	~FWorldSimOwner();
 };
+
+}

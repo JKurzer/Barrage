@@ -1,37 +1,37 @@
 ﻿#pragma once
 PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
+
+#include "mimalloc.h"
 #include "Jolt/Jolt.h"
 #include "Jolt/Math/Quat.h"
 #include "Jolt/Math/Vec3.h"
-using namespace JPH;
 
-// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
-using namespace JPH::literals;
 PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 
 class CoordinateUtils
 {
+
 public:
-	static inline Vec3 ToJoltCoordinates(FVector3d In)
+	static inline JPH::Vec3 ToJoltCoordinates(FVector3d In)
 	{
-		return Vec3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
+		return JPH::Vec3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 	};
 
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
-	static inline Quat ToBarrageForce(FVector3d In)
+	static inline JPH::Quat ToBarrageForce(FVector3d In)
 	{
-		return Quat(In.X*100.0, In.Z*100.0, In.Y*100.0, 0); //reverse is 0,2,1
+		return JPH::Quat(In.X*100.0, In.Z*100.0, In.Y*100.0, 0); //reverse is 0,2,1
 	};
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
-	static inline Quat ToBarrageRotation(FQuat4d In)
+	static inline JPH::Quat ToBarrageRotation(FQuat4d In)
 	{
 		return ToJoltRotation(In);
 	};
 	
-	static inline Float3 ToJoltCoordinates( const Chaos::TVector<float, 3> In)
+	static inline JPH::Float3 ToJoltCoordinates( const Chaos::TVector<float, 3> In)
 	{
-		return Float3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
+		return JPH::Float3(In.X*100.0, In.Z*100.0, In.Y*100.0); //reverse is 0,2,1
 	};
 
 	static inline double RadiusToJolt(double In)
@@ -45,15 +45,15 @@ public:
 	};
 	
 	
-	static inline FVector3f FromJoltCoordinates(Vec3 In)
+	static inline FVector3f FromJoltCoordinates(JPH::Vec3 In)
 {
 		return FVector3f(In[0]/100.0, In[2]/100.0, In[1]/100.0); // this looks _wrong_.
 }
-	static inline Quat ToJoltRotation(FQuat4d In)
+	static inline JPH::Quat ToJoltRotation(FQuat4d In)
 	{
-		return Quat(-In.X, -In.Z, -In.Y, In.W);
+		return JPH::Quat(-In.X, -In.Z, -In.Y, In.W);
 	}
-	static inline FQuat4f FromJoltRotation(Quat In)
+	static inline FQuat4f FromJoltRotation(JPH::Quat In)
 {
 		return FQuat4f(-In.GetX(), -In.GetZ(), -In.GetY(), In.GetW());
 }

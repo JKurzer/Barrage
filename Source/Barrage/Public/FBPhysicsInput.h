@@ -4,6 +4,7 @@
 PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Jolt.h"
 #include "Jolt/Math/Quat.h"
+#include "mimalloc.h"
 PRAGMA_POP_PLATFORM_DEFAULT_PACKING
 
 enum PhysicsInputType
@@ -17,7 +18,6 @@ enum PhysicsInputType
 
 
 //this struct must be size 48.
-
 struct FBPhysicsInput
 {
 		FBLet Target;

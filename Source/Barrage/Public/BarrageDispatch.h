@@ -1,6 +1,12 @@
 #pragma once
 #include "SkeletonTypes.h"
 
+
+namespace JOLT
+{
+	class FWorldSimOwner;
+}
+
 struct TransformUpdate
 {
 	ObjectKey ObjectKey;
@@ -32,6 +38,7 @@ NUM_LAYERS = 2
 
 class BARRAGE_API FBarrageBounder
 {
+	
 	friend class FBBoxParams;
 	friend class FBSphereParams;
 	friend class FBCapParams;
@@ -42,7 +49,6 @@ public:
 	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
 };
 
-class FWorldSimOwner;
 
 #define ALLOWED_THREADS_FOR_BARRAGE_PHYSICS 64
 //if we could make a promise about when threads are allocated, we could probably get rid of this
@@ -55,6 +61,7 @@ UCLASS()
 class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
+	friend class JOLT::FWorldSimOwner;
 	static inline constexpr float TickRateInDelta = 1.0 / 120.0;
 	
 public:
@@ -105,7 +112,7 @@ public:
 	}
 
 	virtual TStatId GetStatId() const override;
-	TSharedPtr<FWorldSimOwner> JoltGameSim;
+	TSharedPtr< JOLT::FWorldSimOwner> JoltGameSim;
 
 	//StackUp should be called before stepworld and from the same thread. anything can be done between them.
 	void StackUp();
@@ -113,7 +120,6 @@ public:
 	void StepWorld(uint64 Time);
 
 protected:
-	friend FWorldSimOwner;
 
 private:
 	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleOwnerMapping;

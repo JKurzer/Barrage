@@ -14,7 +14,7 @@ void UBarrageDispatch::GrantFeed()
 	FScopeLock GrantFeedLock(&GrowOnlyAccLock);
 
 	//TODO: expand if we need for rollback powers. could be sliiiick
-	JoltGameSim->ThreadAcc[ThreadAccTicker] = FWorldSimOwner::FeedMap(std::this_thread::get_id(), 1024);
+	JoltGameSim->ThreadAcc[ThreadAccTicker] = JOLT::FWorldSimOwner::FeedMap(std::this_thread::get_id(), 1024);
 	
 	MyBARRAGEIndex = ThreadAccTicker;
 	++ThreadAccTicker;
@@ -50,7 +50,7 @@ void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 	//and just iterating through that could be Rough for the gamethread.
 	//TODO: investigate this thoroughly for perf.
 	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
-	JoltGameSim = MakeShareable(new FWorldSimOwner(TickRateInDelta));
+	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
 	JoltBodyLifecycleOwnerMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
 }
 
@@ -199,7 +199,7 @@ void UBarrageDispatch::StackUp()
 	{
 		for(auto& x : WorldSimOwner->ThreadAcc)
 		{
-			TSharedPtr<FWorldSimOwner::ThreadFeed> HoldOpen;
+			TSharedPtr<JOLT::FWorldSimOwner::ThreadFeed> HoldOpen;
 			if( x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
 			{
 				while (HoldOpen && !HoldOpen->IsEmpty())
@@ -209,19 +209,19 @@ void UBarrageDispatch::StackUp()
 					if(input->Action == PhysicsInputType::Rotation)
 					{
 						//prolly gonna wanna change this to add torque................... not sure.
-						WorldSimOwner->body_interface->SetRotation(*bID, input->State, EActivation::Activate);
+						WorldSimOwner->body_interface->SetRotation(*bID, input->State, JPH::EActivation::Activate);
 					}
 					else if (input->Action == PhysicsInputType::OtherForce)
 					{
-						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					else if (input->Action == PhysicsInputType::Velocity)
 					{
-						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					else if(input->Action == PhysicsInputType::SelfMovement)
 					{
-						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), EActivation::Activate);
+						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					HoldOpen->Dequeue();
 				}

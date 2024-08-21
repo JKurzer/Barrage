@@ -50,7 +50,7 @@ class FBBoxParams
 public:
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
-	friend class FWorldSimOwner;
+	friend class JOLT::FWorldSimOwner;
 	friend class UBarrageDispatch;
 FVector3d point;
 
@@ -66,7 +66,7 @@ class FBSphereParams
 public:
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
-	friend class FWorldSimOwner;
+	friend class JOLT::FWorldSimOwner;
 	friend class UBarrageDispatch;
 	FVector3d point;
 
@@ -80,7 +80,7 @@ class FBCapParams
 public:
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
-	friend class FWorldSimOwner;
+	friend class JOLT::FWorldSimOwner;
 	friend class UBarrageDispatch;
 	FVector3d point;
 
@@ -96,7 +96,7 @@ class FBMeshParams
 public:
 	friend class FBarrageBounder;
 	friend class CoordinateUtils;
-	friend class FWorldSimOwner;
+	friend class JOLT::FWorldSimOwner;
 	friend class UBarrageDispatch;
 	FVector3d point;
 	double scale;
