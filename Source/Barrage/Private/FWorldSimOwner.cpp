@@ -146,15 +146,13 @@ FWorldSimOwner::~FWorldSimOwner()
 {
 	
 	UnregisterTypes();
-	delete Factory::sInstance; // somehow, this delete is toxic.
+	//delete Factory::sInstance; // somehow, this delete is toxic.
 	Factory::sInstance = nullptr;
 
 
 	//this is the canonical order.
 	//their tests use RTTI for the factory. Not sure how go about that right this sec.
 	// delete mTest;
-	body_activation_listener.Reset();
-	contact_listener.Reset();
 	physics_system.Reset();
 	job_system.Reset();
 	Allocator.Reset();
