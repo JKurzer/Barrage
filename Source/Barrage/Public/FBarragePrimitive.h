@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "SkeletonTypes.h"
 #include "FBarrageKey.h"
-#include "FBShapeParams.h"
 
 
 

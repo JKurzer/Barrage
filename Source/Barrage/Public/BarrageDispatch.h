@@ -18,6 +18,7 @@ struct TransformUpdate
 #include "CapsuleTypes.h"
 #include "FBarragePrimitive.h"
 #include "Containers/CircularQueue.h"
+#include "FBShapeParams.h"
 #include "BarrageDispatch.generated.h"
 
 enum LayersMap

@@ -213,6 +213,7 @@ public:
 
 	struct FeedMap
 	{
+
 		std::thread::id That = std::thread::id();
 		TSharedPtr<ThreadFeed> Queue = nullptr;
 

@@ -1,6 +1,5 @@
 ﻿#pragma once
-#include "BarrageDispatch.h"
-
+#include "IsolatedJoltIncludes.h"
 
 
 enum PhysicsInputType
@@ -22,17 +21,18 @@ struct FBPhysicsInput
 		uint32 metadata;
 		JPH::Quat State;
 	
-	explicit FBPhysicsInput()
-	{
-	//don't initialize anything. just trust me on this.	
-	}
+	explicit FBPhysicsInput(): Sequence(0), Action(), metadata(0), State()
+		{
+			//don't initialize anything. just trust me on this.	
+		}
 
-	FBPhysicsInput(FBLet Affected, int Seq, PhysicsInputType PhysicsInput, JPH::Quat Quat)
+		FBPhysicsInput(FBLet Affected, int Seq, PhysicsInputType PhysicsInput, JPH::Quat Quat)
 	{
 		State = Quat;
 		Target  = Affected;
 		Sequence = Seq;
 		Action = PhysicsInput;
+		metadata = 0;
 	};
 
 };
