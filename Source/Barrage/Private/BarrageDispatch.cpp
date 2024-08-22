@@ -8,8 +8,6 @@
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
 
-	
-
 
 void UBarrageDispatch::GrantFeed()
 {
@@ -17,7 +15,7 @@ void UBarrageDispatch::GrantFeed()
 
 	//TODO: expand if we need for rollback powers. could be sliiiick
 	JoltGameSim->ThreadAcc[ThreadAccTicker] = JOLT::FWorldSimOwner::FeedMap(std::this_thread::get_id(), 1024);
-	
+
 	MyBARRAGEIndex = ThreadAccTicker;
 	++ThreadAccTicker;
 }
@@ -30,7 +28,6 @@ UBarrageDispatch::~UBarrageDispatch()
 {
 	//now that all primitives are destructed
 	FBarragePrimitive::GlobalBarrage = nullptr;
-	
 }
 
 void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
@@ -40,7 +37,7 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		x = MakeShareable(new TArray<FBLet>());
 	}
-	
+
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:TransformUpdateQueue: Online"));
 	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
 	FBarragePrimitive::GlobalBarrage = this;
@@ -68,17 +65,19 @@ void UBarrageDispatch::Deinitialize()
 	}
 	auto HoldOpen = GameTransformPump;
 	GameTransformPump = nullptr;
-	if(HoldOpen)
+	if (HoldOpen)
 	{
 		auto val = HoldOpen.GetSharedReferenceCount();
-		if(val > 1)
+		if (val > 1)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hey, so something's holding live references to the queue. Maybe. Shared Ref Count is not reliable."));
+			UE_LOG(LogTemp, Warning,
+			       TEXT(
+				       "Hey, so something's holding live references to the queue. Maybe. Shared Ref Count is not reliable."
+			       ));
 		}
 		HoldOpen->Empty();
 	}
 	HoldOpen = nullptr;
-	
 }
 
 void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp)
@@ -92,19 +91,35 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t ti
 //feature. I'm going to wait to refactor the types until testing is complete.
 FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKey, uint16_t Layer)
 {
-	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
-	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+	auto HoldOpen = JoltGameSim;
+	if (HoldOpen)
+	{
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+	}
+	return FBLet();
 }
 
 FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16_t Layer)
 {
-	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
-	return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
+	auto HoldOpen = JoltGameSim;
+	if (HoldOpen)
+	{
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
+	}
+	return FBLet();
 }
+
 FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer)
 {
-	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
-	return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
+	auto HoldOpen = JoltGameSim;
+	if (HoldOpen)
+	{
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
+	}
+	return FBLet();
 }
 
 FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
@@ -122,62 +137,69 @@ FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarr
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
-	const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey)
+                                              const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey,
+                                              FBarrageKey& InKey)
 {
-	auto shared =  JoltGameSim->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey, InKey);
-	JoltBodyLifecycleMapping->Add(InKey, shared);
-	return shared;
+	auto HoldOpen = JoltGameSim;
+	if (HoldOpen)
+	{
+		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey, InKey);
+		JoltBodyLifecycleMapping->Add(InKey, shared);
+		return shared;
+	}
+	return FBLet();
 }
+
 //here's the same code, broadly, from War Thunder:
-	/*
-	    case PhysCollision::TYPE_TRIMESH:
-    {
-      auto meshColl = static_cast<const PhysTriMeshCollision *>(c);
-      JPH::MeshShapeSettings shape;
-      shape.mTriangleVertices.resize(meshColl->vnum);
-      shape.mIndexedTriangles.resize(meshColl->inum / 3);
-      Point3 scl = meshColl->scale;
-      int vstride = meshColl->vstride;
-      bool rev_face = meshColl->revNorm;
+/*
+    case PhysCollision::TYPE_TRIMESH:
+{
+  auto meshColl = static_cast<const PhysTriMeshCollision *>(c);
+  JPH::MeshShapeSettings shape;
+  shape.mTriangleVertices.resize(meshColl->vnum);
+  shape.mIndexedTriangles.resize(meshColl->inum / 3);
+  Point3 scl = meshColl->scale;
+  int vstride = meshColl->vstride;
+  bool rev_face = meshColl->revNorm;
 
-      if (meshColl->vtypeShort)
-      {
-        JPH::Float3 *d = shape.mTriangleVertices.data();
-        for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
-          d->x = ((uint16_t *)s)[0] * scl.x, d->y = ((uint16_t *)s)[1] * scl.y, d->z = ((uint16_t *)s)[2] * scl.z;
-      }
-      else
-      {
-        JPH::Float3 *d = shape.mTriangleVertices.data();
-        for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
-          d->x = ((float *)s)[0] * scl.x, d->y = ((float *)s)[1] * scl.y, d->z = ((float *)s)[2] * scl.z;
-      }
-      if (meshColl->istride == 2)
-      {
-        JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
-        for (auto s = (const unsigned short *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
-          d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
-      }
-      else
-      {
-        JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
-        for (auto s = (const unsigned *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
-          d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
-      }
+  if (meshColl->vtypeShort)
+  {
+    JPH::Float3 *d = shape.mTriangleVertices.data();
+    for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
+      d->x = ((uint16_t *)s)[0] * scl.x, d->y = ((uint16_t *)s)[1] * scl.y, d->z = ((uint16_t *)s)[2] * scl.z;
+  }
+  else
+  {
+    JPH::Float3 *d = shape.mTriangleVertices.data();
+    for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
+      d->x = ((float *)s)[0] * scl.x, d->y = ((float *)s)[1] * scl.y, d->z = ((float *)s)[2] * scl.z;
+  }
+  if (meshColl->istride == 2)
+  {
+    JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
+    for (auto s = (const unsigned short *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
+      d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
+  }
+  else
+  {
+    JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
+    for (auto s = (const unsigned *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
+      d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
+  }
 
-      auto res = shape.Create();
-      if (DAGOR_LIKELY(res.IsValid()))
-        return res.Get();
+  auto res = shape.Create();
+  if (DAGOR_LIKELY(res.IsValid()))
+    return res.Get();
 
-      logerr("Failed to create non sanitized mesh shape <%s>: %s", meshColl->debugName, res.GetError().c_str());
+  logerr("Failed to create non sanitized mesh shape <%s>: %s", meshColl->debugName, res.GetError().c_str());
 
-      decltype(shape) sanitizedShape;
-      sanitizedShape.mTriangleVertices = eastl::move(shape.mTriangleVertices);
-      sanitizedShape.mIndexedTriangles = eastl::move(shape.mIndexedTriangles);
-      sanitizedShape.Sanitize();
-      return check_and_return_shape(sanitizedShape.Create(), __LINE__);
-    }
-	*/
+  decltype(shape) sanitizedShape;
+  sanitizedShape.mTriangleVertices = eastl::move(shape.mTriangleVertices);
+  sanitizedShape.mIndexedTriangles = eastl::move(shape.mIndexedTriangles);
+  sanitizedShape.Sanitize();
+  return check_and_return_shape(sanitizedShape.Create(), __LINE__);
+}
+*/
 
 
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
@@ -199,7 +221,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 {
 	auto HoldOpen = JoltGameSim;
-	if(HoldOpen && JoltGameSim)
+	if (HoldOpen && JoltGameSim)
 	{
 		HoldOpen->FinalizeReleasePrimitive(BarrageKey);
 	}
@@ -214,38 +236,40 @@ TStatId UBarrageDispatch::GetStatId() const
 void UBarrageDispatch::StackUp()
 {
 	auto WorldSimOwner = JoltGameSim;
-	if(WorldSimOwner)
+	if (WorldSimOwner)
 	{
-		for(auto& x : WorldSimOwner->ThreadAcc)
+		for (auto& x : WorldSimOwner->ThreadAcc)
 		{
 			TSharedPtr<JOLT::FWorldSimOwner::ThreadFeed> HoldOpen;
-			if( x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
+			if (x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
 			{
 				while (HoldOpen && !HoldOpen->IsEmpty())
 				{
 					auto input = HoldOpen->Peek();
 					auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
-					if(input->Action == PhysicsInputType::Rotation)
+					if (input->Action == PhysicsInputType::Rotation)
 					{
 						//prolly gonna wanna change this to add torque................... not sure.
 						WorldSimOwner->body_interface->SetRotation(*bID, input->State, JPH::EActivation::Activate);
 					}
 					else if (input->Action == PhysicsInputType::OtherForce)
 					{
-						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
+						WorldSimOwner->body_interface->
+						               AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					else if (input->Action == PhysicsInputType::Velocity)
 					{
-						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
+						WorldSimOwner->body_interface->
+						               AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
-					else if(input->Action == PhysicsInputType::SelfMovement)
+					else if (input->Action == PhysicsInputType::SelfMovement)
 					{
-						WorldSimOwner->body_interface->AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
+						WorldSimOwner->body_interface->
+						               AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					HoldOpen->Dequeue();
 				}
 			}
-			
 		}
 	}
 }
@@ -253,20 +277,21 @@ void UBarrageDispatch::StackUp()
 void UBarrageDispatch::StepWorld(uint64 Time)
 {
 	auto HoldOpenWorld = JoltGameSim;
-	if(HoldOpenWorld)
+	if (HoldOpenWorld)
 	{
 		JoltGameSim->StepSimulation();
 		//maintain tombstones
 		CleanTombs();
 		auto HoldOpen = JoltBodyLifecycleMapping;
-		if(HoldOpen != nullptr)
+		if (HoldOpen != nullptr)
 		{
-			for(auto& x : *HoldOpen.Get())
+			for (auto& x : *HoldOpen.Get())
 			{
 				auto RefHoldOpen = x.Value;
-				if(RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
+				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
 				{
-					FBarragePrimitive::TryGetTransformFromJolt(x.Value, Time); //returns a bool that can be used for debug.
+					FBarragePrimitive::TryGetTransformFromJolt(x.Value, Time);
+					//returns a bool that can be used for debug.
 				}
 			}
 		}
@@ -277,7 +302,7 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to semantic changes. the Point is left in the UE space. 
 FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
-	double yDiam, double zDiam)
+                                               double yDiam, double zDiam)
 {
 	FBBoxParams blob;
 	blob.point = point;
@@ -286,6 +311,7 @@ FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
 	blob.JoltZ = CoordinateUtils::DiamToJoltHalfExtent(yDiam);
 	return blob;
 }
+
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to change. the Point is left in the UE space. 
 FBSphereParams FBarrageBounder::GenerateSphereBounds(FVector3d point, double radius)
@@ -295,6 +321,7 @@ FBSphereParams FBarrageBounder::GenerateSphereBounds(FVector3d point, double rad
 	blob.JoltRadius = CoordinateUtils::RadiusToJolt(radius);
 	return blob;
 }
+
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to change. the Point is left in the UE space, signified by the UE type. 
 FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule)
@@ -305,4 +332,3 @@ FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Caps
 	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(Capsule.Extent());
 	return blob;
 }
-
