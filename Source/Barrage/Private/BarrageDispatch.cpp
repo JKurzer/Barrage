@@ -40,6 +40,9 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		x = MakeShareable(new TArray<FBLet>());
 	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Barrage:TransformUpdateQueue: Online"));
+	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
 	FBarragePrimitive::GlobalBarrage = this;
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
 }
@@ -51,7 +54,6 @@ void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 	//this approach may actually be too slow. it is pleasingly lockless, but it allocs 16megs
 	//and just iterating through that could be Rough for the gamethread.
 	//TODO: investigate this thoroughly for perf.
-	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
 	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
 }
@@ -68,9 +70,10 @@ void UBarrageDispatch::Deinitialize()
 	GameTransformPump = nullptr;
 	if(HoldOpen)
 	{
-		if(HoldOpen.GetSharedReferenceCount() > 1)
+		auto val = HoldOpen.GetSharedReferenceCount();
+		if(val > 1)
 		{
-			throw;
+			UE_LOG(LogTemp, Warning, TEXT("Hey, so something's holding live references to the queue. Maybe. Shared Ref Count is not reliable."));
 		}
 		HoldOpen->Empty();
 	}
