@@ -5,6 +5,7 @@
 // see: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.4#namespaces
 
 
+#include "BarrageDispatch.h"
 #include "Containers/CircularQueue.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "CoordinateUtils.h"
@@ -12,6 +13,7 @@
 #include "FBarrageKey.h"
 #include "FBPhysicsInput.h"
 
+#include "SkeletonTypes.h"
 #include "IsolatedJoltIncludes.h"
 #include "PhysicsEngine/BodySetup.h"
 
@@ -400,13 +402,7 @@ public:
 	//Broad Phase is the first pass in the engine's cycle, and the optimization used to accelerate it breaks down as objects are added. As a result, when you have time after adding objects,
 	//you should call optimize broad phase. You should also batch object creation whenever possible, but we don't support that well yet.
 	//Generally, as we add and remove objects, we'll want to perform this, but we really don't want to run it every tick. We can either use trigger logic or a cadenced ticklite
-	void OptimizeBroadPhase()
-	{
-		// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
-		// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
-		// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-		physics_system->OptimizeBroadPhase();
-	}
+	void OptimizeBroadPhase();
 
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 	{

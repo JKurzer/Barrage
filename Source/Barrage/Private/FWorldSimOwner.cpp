@@ -137,15 +137,24 @@ namespace JOLT
 		// Step the world
 		auto AllocHoldOpen = Allocator;
 		auto JobHoldOpen = job_system;
+		auto PhysicsHoldOpen = physics_system;
 		if(AllocHoldOpen && JobHoldOpen)
 		{
-			physics_system->Update(DeltaTime, cCollisionSteps, AllocHoldOpen.Get(), JobHoldOpen.Get());
+			PhysicsHoldOpen->Update(DeltaTime, cCollisionSteps, AllocHoldOpen.Get(), JobHoldOpen.Get());
 		}
+	}
+
+	void FWorldSimOwner::OptimizeBroadPhase()
+	{
+		// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
+		// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
+		// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
+		auto HoldOpen = physics_system;
+		HoldOpen->OptimizeBroadPhase();
 	}
 
 	FWorldSimOwner::~FWorldSimOwner()
 	{
-	
 		UnregisterTypes();
 		//delete Factory::sInstance; // somehow, this delete is toxic.
 		Factory::sInstance = nullptr;
@@ -154,7 +163,15 @@ namespace JOLT
 		//this is the canonical order.
 		//their tests use RTTI for the factory. Not sure how go about that right this sec.
 		// delete mTest;
-		physics_system.Reset();
+		//grab our hold open.		
+		auto HoldOpen =physics_system;
+		auto& magic = physics_system->GetBodyLockInterface();
+		physics_system.Reset();							//cast it into the fire.
+		std::this_thread::yield(); //Cycle.
+		
+		magic.LockWrite(magic.GetAllBodiesMutexMask()); //lock it down. all write access to the physics engine passes through this.
+		HoldOpen.Reset();
+		magic.UnlockWrite(magic.GetAllBodiesMutexMask());
 		job_system.Reset();
 		Allocator.Reset();
 	}

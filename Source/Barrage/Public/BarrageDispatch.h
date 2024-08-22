@@ -1,15 +1,6 @@
 #pragma once
 #include "SkeletonTypes.h"
-struct TransformUpdate
-{
-	ObjectKey ObjectKey;
-	uint64 sequence;
-	FQuat4f Rotation;// this alignment looks wrong. Like outright wrong.
-	FVector3f Velocity;
-	uint32 spline1;
-	FVector3f Position;
-	uint32 spline2;
-};
+
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
@@ -46,8 +37,7 @@ namespace JOLT
 	class FWorldSimOwner;
 }
 
-using TransformUpdatesForGameThread = TCircularQueue<TransformUpdate>;
-#define ALLOWED_THREADS_FOR_BARRAGE_PHYSICS 64
+constexpr int ALLOWED_THREADS_FOR_BARRAGE_PHYSICS =64;
 //if we could make a promise about when threads are allocated, we could probably get rid of this
 //since the accumulator is in the world subsystem and so gets cleared when the world spins down.
 //that would mean that we could add all the threads, then copy the state from the volatile array to a

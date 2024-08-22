@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include "HAL/Platform.h"
 THIRD_PARTY_INCLUDES_START
 
 

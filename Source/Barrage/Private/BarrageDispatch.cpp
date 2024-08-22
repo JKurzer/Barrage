@@ -64,7 +64,17 @@ void UBarrageDispatch::Deinitialize()
 	{
 		x = nullptr;
 	}
+	auto HoldOpen = GameTransformPump;
 	GameTransformPump = nullptr;
+	if(HoldOpen)
+	{
+		if(HoldOpen.GetSharedReferenceCount() > 1)
+		{
+			throw;
+		}
+		HoldOpen->Empty();
+	}
+	HoldOpen = nullptr;
 	
 }
 
