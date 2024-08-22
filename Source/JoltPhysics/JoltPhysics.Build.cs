@@ -87,8 +87,8 @@ public class JoltPhysics : ModuleRules
         cmakeOptions += " -DUSE_F16C=" + simdStatus;
         
         //IF YOU USE THE 14.38.33130 zip file, you will need to change these paths AND adjust the VS2022 generator's behavior.
-        //cmakeOptions += " -DCMAKE_CXX_COMPILER=\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe\" ";
-        //cmakeOptions += " -DCMAKE_CXX_LINK_EXECUTABLE=\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/link.exe\" ";
+        cmakeOptions += " -DCMAKE_CXX_COMPILER=\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe\" ";
+        cmakeOptions += " -DCMAKE_CXX_LINK_EXECUTABLE=\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/link.exe\" ";
 
         // use the UE4CMake plugin to generate project files https://github.com/caseymcc/UE4CMake read the instructions how to use it, it's straight forward.
         CMakeTarget.add(Target, this, "Jolt", Path.Combine(this.ModuleDirectory, "Build"), cmakeOptions, false);
