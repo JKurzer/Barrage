@@ -53,13 +53,13 @@ void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 	//TODO: investigate this thoroughly for perf.
 	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
-	JoltBodyLifecycleOwnerMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
+	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
 }
 
 void UBarrageDispatch::Deinitialize()
 {
 	Super::Deinitialize();
-	JoltBodyLifecycleOwnerMapping = nullptr;
+	JoltBodyLifecycleMapping = nullptr;
 	for (auto& x : Tombs)
 	{
 		x = nullptr;
@@ -87,13 +87,13 @@ void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t ti
 //this is because over time, the needs of these classes may diverge and multiply
 //and it's not clear to me that Shapefulness is going to actually be the defining shared
 //feature. I'm going to wait to refactor the types until testing is complete.
-FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKey, uint16_t Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16_t Layer)
 {
 	auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 	return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
@@ -106,9 +106,13 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, ObjectKey OutKe
 
 FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
 {
-	auto indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
-	indirect.Object->Me = form;
-	JoltBodyLifecycleOwnerMapping->Add(indirect.Object->KeyIntoBarrage, indirect);
+	//interestingly, you can't use auto here. don't try. it'll allocate a raw pointer internal
+	//and that will get stored in the jolt body lifecycle mapping.
+	//ANY raw pointer in ANY Ttype container is extremely unsafe.
+	//it basically ensures that you will get turned into a pillar of salt.
+	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
+	indirect->Me = form;
+	JoltBodyLifecycleMapping->Add(indirect->KeyIntoBarrage, indirect);
 	return indirect;
 }
 
@@ -118,7 +122,7 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey)
 {
 	auto shared =  JoltGameSim->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey, InKey);
-	JoltBodyLifecycleOwnerMapping->Add(InKey, shared);
+	JoltBodyLifecycleMapping->Add(InKey, shared);
 	return shared;
 }
 //here's the same code, broadly, from War Thunder:
@@ -186,7 +190,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	//that this thoroughfare? it leads into the region of peril.
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
-	return JoltBodyLifecycleOwnerMapping->FindRef(Existing);
+	return JoltBodyLifecycleMapping->FindRef(Existing);
 }
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
@@ -251,7 +255,7 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		JoltGameSim->StepSimulation();
 		//maintain tombstones
 		CleanTombs();
-		auto HoldOpen = JoltBodyLifecycleOwnerMapping;
+		auto HoldOpen = JoltBodyLifecycleMapping;
 		if(HoldOpen != nullptr)
 		{
 			for(auto& x : *HoldOpen.Get())

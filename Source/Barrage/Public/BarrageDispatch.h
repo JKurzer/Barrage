@@ -108,7 +108,7 @@ public:
 protected:
 
 private:
-	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleOwnerMapping;
+	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleMapping;
 	FBLet ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
@@ -134,7 +134,7 @@ private:
 	void Entomb(FBLet NONREFERENCE)
 	{
 		//request removal here
-		JoltBodyLifecycleOwnerMapping->Remove(NONREFERENCE->KeyIntoBarrage);
+		JoltBodyLifecycleMapping->Remove(NONREFERENCE->KeyIntoBarrage);
 		// there doesn't seem to be a better way to do this idiomatically in the UE framework.
 		//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe?
 		Tombs[TombOffset]->Push(NONREFERENCE);
