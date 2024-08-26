@@ -53,12 +53,14 @@ void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 	//TODO: investigate this thoroughly for perf.
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
 	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
+	TranslationMapping = MakeShareable(new TMap<ObjectKey, FBarrageKey>());
 }
 
 void UBarrageDispatch::Deinitialize()
 {
 	Super::Deinitialize();
 	JoltBodyLifecycleMapping = nullptr;
+	TranslationMapping = nullptr;
 	for (auto& x : Tombs)
 	{
 		x = nullptr;
@@ -131,6 +133,7 @@ FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarr
 	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect->Me = form;
 	JoltBodyLifecycleMapping->Add(indirect->KeyIntoBarrage, indirect);
+	TranslationMapping->Add(indirect->KeyOutOfBarrage, indirect->KeyIntoBarrage);
 	return indirect;
 }
 
@@ -145,62 +148,11 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	{
 		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey, InKey);
 		JoltBodyLifecycleMapping->Add(InKey, shared);
+		TranslationMapping->Add(Outkey, InKey);
 		return shared;
 	}
 	return FBLet();
 }
-
-//here's the same code, broadly, from War Thunder:
-/*
-    case PhysCollision::TYPE_TRIMESH:
-{
-  auto meshColl = static_cast<const PhysTriMeshCollision *>(c);
-  JPH::MeshShapeSettings shape;
-  shape.mTriangleVertices.resize(meshColl->vnum);
-  shape.mIndexedTriangles.resize(meshColl->inum / 3);
-  Point3 scl = meshColl->scale;
-  int vstride = meshColl->vstride;
-  bool rev_face = meshColl->revNorm;
-
-  if (meshColl->vtypeShort)
-  {
-    JPH::Float3 *d = shape.mTriangleVertices.data();
-    for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
-      d->x = ((uint16_t *)s)[0] * scl.x, d->y = ((uint16_t *)s)[1] * scl.y, d->z = ((uint16_t *)s)[2] * scl.z;
-  }
-  else
-  {
-    JPH::Float3 *d = shape.mTriangleVertices.data();
-    for (auto s = (const char *)meshColl->vdata, se = s + meshColl->vnum * vstride; s < se; s += vstride, d++)
-      d->x = ((float *)s)[0] * scl.x, d->y = ((float *)s)[1] * scl.y, d->z = ((float *)s)[2] * scl.z;
-  }
-  if (meshColl->istride == 2)
-  {
-    JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
-    for (auto s = (const unsigned short *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
-      d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
-  }
-  else
-  {
-    JPH::IndexedTriangle *d = shape.mIndexedTriangles.data();
-    for (auto s = (const unsigned *)meshColl->idata, se = s + meshColl->inum; s < se; s += 3, d++)
-      d->mIdx[0] = s[0], d->mIdx[1] = s[rev_face ? 2 : 1], d->mIdx[2] = s[rev_face ? 1 : 2];
-  }
-
-  auto res = shape.Create();
-  if (DAGOR_LIKELY(res.IsValid()))
-    return res.Get();
-
-  logerr("Failed to create non sanitized mesh shape <%s>: %s", meshColl->debugName, res.GetError().c_str());
-
-  decltype(shape) sanitizedShape;
-  sanitizedShape.mTriangleVertices = eastl::move(shape.mTriangleVertices);
-  sanitizedShape.mIndexedTriangles = eastl::move(shape.mIndexedTriangles);
-  sanitizedShape.Sanitize();
-  return check_and_return_shape(sanitizedShape.Create(), __LINE__);
-}
-*/
-
 
 //unlike our other ecs components in artillery, barrage dispatch does not maintain the mappings directly.
 //this is because we may have _many_ jolt sims running if we choose to do deterministic rollback in certain ways.
@@ -216,6 +168,28 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
 	return JoltBodyLifecycleMapping->FindRef(Existing);
+}
+
+FBLet UBarrageDispatch::GetShapeRef(ObjectKey Existing) const
+{
+	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
+	//if entomb gets sliced, the tombstone check will fail as long as it is performed within 27 milliseconds of this call.
+	//as a result, one of three states will arise:
+	//1) you get a null pointer
+	//2) you get a valid shared pointer which will hold the asset open until you're done, but the tombstone markings will be set, letting you know
+	//that this thoroughfare? it leads into the region of peril.
+	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
+	//this means your calls will all succeed but none will be applied during the apply shadow phase.
+	auto ref = TranslationMapping->Find(Existing);
+	if(ref)
+	{
+		FBLet* deref =  JoltBodyLifecycleMapping->Find(*ref);
+		if(deref && *deref)
+		{
+			return *deref;
+		}
+	}
+	return FBLet();
 }
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)

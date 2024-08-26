@@ -77,6 +77,7 @@ public:
 	FBLet CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer);
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey);
 	FBLet GetShapeRef(FBarrageKey Existing) const;
+	FBLet GetShapeRef(ObjectKey Existing) const;
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
 	//any non-zero value is the same, effectively, as a nullity for the purposes of any new operation.
@@ -109,6 +110,8 @@ protected:
 
 private:
 	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleMapping;
+	
+	TSharedPtr<TMap<ObjectKey, FBarrageKey>> TranslationMapping;
 	FBLet ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
@@ -135,6 +138,7 @@ private:
 	{
 		//request removal here
 		JoltBodyLifecycleMapping->Remove(NONREFERENCE->KeyIntoBarrage);
+		TranslationMapping->Remove(NONREFERENCE->KeyOutOfBarrage);
 		// there doesn't seem to be a better way to do this idiomatically in the UE framework.
 		//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe?
 		Tombs[TombOffset]->Push(NONREFERENCE);

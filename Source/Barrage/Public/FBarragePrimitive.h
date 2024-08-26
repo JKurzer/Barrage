@@ -11,7 +11,7 @@
 //enum prop rather than a class parameter. The pack pragma makes me reluctant to use non-POD approaches.
 //primitives MUST be passed by reference or pointer. doing otherwise means that you may have an out of date view
 //of tombstone state, which is not particularly safe.
-class FBarragePrimitive
+class BARRAGE_API FBarragePrimitive
 {
 	friend class UBarrageDispatch;
 public:
