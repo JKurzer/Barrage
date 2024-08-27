@@ -260,8 +260,7 @@ public:
 
 	float DeltaTime = 0.01; //You should set this or pass it in.
 
-	//this is actually a member of the physics system, and we should probably use hold-opens again the physics system when
-	//making use of it.
+	//this is actually a member of the physics system
 	BodyInterface* body_interface;
 
 	// This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.

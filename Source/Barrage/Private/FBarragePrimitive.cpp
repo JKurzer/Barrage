@@ -68,9 +68,6 @@ bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target, uint64 Time)
 								Time,
 								CoordinateUtils::FromJoltRotation(GameSimHoldOpen->body_interface->GetRotation(*bID)),
 								CoordinateUtils::FromJoltCoordinates(
-									GameSimHoldOpen->body_interface->GetLinearVelocity(*bID)),
-									0,
-								CoordinateUtils::FromJoltCoordinates(
 									GameSimHoldOpen->body_interface->GetPosition(*bID)),
 									0
 							));
