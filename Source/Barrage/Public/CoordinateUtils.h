@@ -34,7 +34,7 @@ public:
 
 	static inline double DiamToJoltHalfExtent(double In)
 	{
-		return In/50.0; 
+		return In/200.0; 
 	};
 	
 	
