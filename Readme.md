@@ -14,7 +14,7 @@ version of the VC toolchain. This version or a suitable comparable should be ins
 
 ## Known Install issues
 ### IL Mismatch error 
-You may hit an issue where an IL mismatch occurs. I have had no luck reproducing this locally, and it appears to be due to a specific installation order issue. If this happens, let me know, and we'll compare environments. this arises when cmake and UE's build system use different toolchain components or when CMake uses one linker and another compiler.
+You may hit an issue where an IL mismatch occurs. I have had no luck reproducing this locally, and it appears to be due to a specific installation order issue around the VC toolchain. I've included a copy of the correct VC version in the Barrage plugin. If this happens and placing that toolchain in the correct spot does not resolve it, let me know, and we'll compare environments. The standard work around is to use the VS installer to repair visual studio, then install the correct toolchain. For us, the toolchain should be 14.38.33130 compiler and associated Win SDKs and redists.
 
 # Oddities Of Note
 ### Tombstones
