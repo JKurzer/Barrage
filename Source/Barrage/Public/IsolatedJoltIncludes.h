@@ -24,6 +24,7 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Physics/Character/CharacterBase.h"
 #include "Jolt/Physics/Character/CharacterVirtual.h"
 #include "Jolt/Physics/Character/Character.h"
+#include "Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h"
 // Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
 JPH_SUPPRESS_WARNINGS
 

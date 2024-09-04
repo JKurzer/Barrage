@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "FWorldSimOwner.h"
 #include "IsolatedJoltIncludes.h"
 
 //based on
@@ -33,7 +34,8 @@ namespace JOLT
 		Vec3					mEffectiveVelocity = Vec3::sZero();
 	protected:
 		friend class FWorldSimOwner;
-		PhysicsSystem *World;
+		TSharedPtr<FWorldSimOwner> Machine;
+		TSharedPtr<JPH::PhysicsSystem,ESPMode::ThreadSafe> World;
 
 	public:
 		RVec3					GetPosition() const
@@ -45,6 +47,8 @@ namespace JOLT
 		void					Create()
 		{
 			// Create capsule
+			auto HoldOpen = Machine;
+			World = HoldOpen->physics_system; // this MAY lead to a circ ref?  I think I've avoided it.
 			Ref<Shape> capsule = new CapsuleShape(0.5f * mHeightStanding, mRadiusStanding);
 			mCharacterSettings.mShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * mHeightStanding + mRadiusStanding, 0), Quat::sIdentity(), capsule).Create().Get();
 
@@ -52,9 +56,9 @@ namespace JOLT
 			mCharacterSettings.mSupportingVolume = Plane(Vec3::sAxisY(), -mHeightStanding); // Accept contacts that touch the lower sphere of the capsule
 
 			// Create character
-			mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, mContext.GetSystem());
-			mCharacter->SetListener(this);
-			mCharacter->SetCharacterVsCharacterCollision(&mCharacterVsCharacter);
+			mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, World.Get());
+			//mCharacter->SetListener(this);
+			mCharacter->SetCharacterVsCharacterCollision(&Machine->mCharacterVsCharacterCollision);
 		}
 		void					Step()
 		{
@@ -86,15 +90,15 @@ namespace JOLT
 			// Update character velocity
 			mCharacter->SetLinearVelocity(new_velocity);
 
-			//RVec3 start_pos = GetPosition();
+			RVec3 start_pos = GetPosition();
 
 			// Update the character position
 			TempAllocatorMalloc allocator;
 			mCharacter->ExtendedUpdate(mDeltaTime,
 				World->GetGravity(),
 				mUpdateSettings,
-				system->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
-				system->GetDefaultLayerFilter(Layers::MOVING),
+				World->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
+				World->GetDefaultLayerFilter(Layers::MOVING),
 				{ },
 				{ },
 				allocator);

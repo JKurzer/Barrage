@@ -27,6 +27,7 @@
 #include <Jolt/Core/StreamIn.h>
 #include <Jolt/Core/StreamOut.h>
 #include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Core/ScopeExit.h>
 #include <Jolt/Geometry/AABox4.h>
 #include <Jolt/Geometry/RayTriangle.h>
 #include <Jolt/Geometry/RayAABox.h>
@@ -203,6 +204,7 @@ void HeightFieldShape::CalculateActiveEdges(uint inX, uint inY, uint inSizeX, ui
 	// Allocate temporary buffer for normals
 	uint normals_size = 2 * inSizeX * inSizeY * sizeof(Vec3);
 	Vec3 *normals = (Vec3 *)inAllocator.Allocate(normals_size);
+	JPH_SCOPE_EXIT([&inAllocator, normals, normals_size]{ inAllocator.Free(normals, normals_size); });
 
 	// Calculate triangle normals and make normals zero for triangles that are missing
 	Vec3 *out_normal = normals;
@@ -312,9 +314,6 @@ void HeightFieldShape::CalculateActiveEdges(uint inX, uint inY, uint inSizeX, ui
 
 		global_bit_pos += 3 * (mSampleCount - 1 - inSizeX);
 	}
-
-	// Free temporary buffer for normals
-	inAllocator.Free(normals, normals_size);
 }
 
 void HeightFieldShape::CalculateActiveEdges(const HeightFieldShapeSettings &inSettings)
@@ -714,6 +713,36 @@ HeightFieldShape::~HeightFieldShape()
 		AlignedFree(mRangeBlocks);
 }
 
+Ref<HeightFieldShape> HeightFieldShape::Clone() const
+{
+	Ref<HeightFieldShape> clone = new HeightFieldShape;
+	clone->SetUserData(GetUserData());
+
+	clone->mOffset = mOffset;
+	clone->mScale = mScale;
+	clone->mSampleCount = mSampleCount;
+	clone->mBlockSize = mBlockSize;
+	clone->mBitsPerSample = mBitsPerSample;
+	clone->mSampleMask = mSampleMask;
+	clone->mMinSample = mMinSample;
+	clone->mMaxSample = mMaxSample;
+
+	clone->AllocateBuffers();
+	memcpy(clone->mRangeBlocks, mRangeBlocks, mRangeBlocksSize * sizeof(RangeBlock) + mHeightSamplesSize + mActiveEdgesSize); // Copy the entire buffer in 1 go
+
+	clone->mMaterials.reserve(mMaterials.capacity()); // Ensure we keep the capacity of the original
+	clone->mMaterials = mMaterials;
+	clone->mMaterialIndices = mMaterialIndices;
+	clone->mNumBitsPerMaterialIndex = mNumBitsPerMaterialIndex;
+
+#ifdef JPH_DEBUG_RENDERER
+	clone->mGeometry = mGeometry;
+	clone->mCachedUseMaterialColors = mCachedUseMaterialColors;
+#endif // JPH_DEBUG_RENDERER
+
+	return clone;
+}
+
 inline void HeightFieldShape::sGetRangeBlockOffsetAndStride(uint inNumBlocks, uint inMaxLevel, uint &outRangeBlockOffset, uint &outRangeBlockStride)
 {
 	outRangeBlockOffset = sGridOffsets[inMaxLevel - 1];
@@ -1101,18 +1130,20 @@ void HeightFieldShape::SetHeights(uint inX, uint inY, uint inSizeX, uint inSizeY
 		uint dst_range_block_offset, dst_range_block_stride;
 		sGetRangeBlockOffsetAndStride(num_blocks >> 1, max_level - 1, dst_range_block_offset, dst_range_block_stride);
 
-		// If we're starting halfway through a 2x2 block, we need to process one extra block since we take steps of 2 blocks below
-		uint block_x_end = (block_start_x & 1) && block_start_x + num_blocks_x < num_blocks? num_blocks_x + 1 : num_blocks_x;
-		uint block_y_end = (block_start_y & 1) && block_start_y + num_blocks_y < num_blocks? num_blocks_y + 1 : num_blocks_y;
+		// We'll be processing 2x2 blocks below so we need the start coordinates to be even and we extend the number of blocks to correct for that
+		if (block_start_x & 1) { --block_start_x; ++num_blocks_x; }
+		if (block_start_y & 1) { --block_start_y; ++num_blocks_y; }
 
 		// Loop over all affected blocks
-		for (uint block_y = 0; block_y < block_y_end; block_y += 2)
-			for (uint block_x = 0; block_x < block_x_end; block_x += 2)
+		uint block_end_x = block_start_x + num_blocks_x;
+		uint block_end_y = block_start_y + num_blocks_y;
+		for (uint block_y = block_start_y; block_y < block_end_y; block_y += 2)
+			for (uint block_x = block_start_x; block_x < block_end_x; block_x += 2)
 			{
 				// Get source range block
 				RangeBlock *src_range_block;
 				uint index_in_src_block;
-				GetRangeBlock(block_start_x + block_x, block_start_y + block_y, range_block_offset, range_block_stride, src_range_block, index_in_src_block);
+				GetRangeBlock(block_x, block_y, range_block_offset, range_block_stride, src_range_block, index_in_src_block);
 
 				// Determine quantized min and max value for the entire 2x2 block
 				uint16 min_value = 0xffff;
@@ -1127,7 +1158,7 @@ void HeightFieldShape::SetHeights(uint inX, uint inY, uint inSizeX, uint inSizeY
 				// Write to destination block
 				RangeBlock *dst_range_block;
 				uint index_in_dst_block;
-				GetRangeBlock((block_start_x + block_x) >> 1, (block_start_y + block_y) >> 1, dst_range_block_offset, dst_range_block_stride, dst_range_block, index_in_dst_block);
+				GetRangeBlock(block_x >> 1, block_y >> 1, dst_range_block_offset, dst_range_block_stride, dst_range_block, index_in_dst_block);
 				dst_range_block->mMin[index_in_dst_block] = uint16(min_value);
 				dst_range_block->mMax[index_in_dst_block] = uint16(max_value);
 			}
@@ -1222,6 +1253,7 @@ bool HeightFieldShape::SetMaterials(uint inX, uint inY, uint inSizeX, uint inSiz
 	// Remap materials
 	uint material_remap_table_size = uint(inMaterialList != nullptr? inMaterialList->size() : mMaterials.size());
 	uint8 *material_remap_table = (uint8 *)inAllocator.Allocate(material_remap_table_size);
+	JPH_SCOPE_EXIT([&inAllocator, material_remap_table, material_remap_table_size]{ inAllocator.Free(material_remap_table, material_remap_table_size); });
 	if (inMaterialList != nullptr)
 	{
 		// Conservatively reserve more space if the incoming material list is bigger
@@ -1245,7 +1277,6 @@ bool HeightFieldShape::SetMaterials(uint inX, uint inY, uint inSizeX, uint inSiz
 				if (mMaterials.size() >= 256)
 				{
 					// We can't have more than 256 materials since we use uint8 as indices
-					inAllocator.Free(material_remap_table, material_remap_table_size);
 					return false;
 				}
 				*remap_entry = uint8(mMaterials.size());
@@ -1343,8 +1374,6 @@ bool HeightFieldShape::SetMaterials(uint inX, uint inY, uint inSizeX, uint inSiz
 		}
 	}
 
-	// Free the remapping table
-	inAllocator.Free(material_remap_table, material_remap_table_size);
 	return true;
 }
 
@@ -1406,6 +1435,11 @@ void HeightFieldShape::DecodeSubShapeID(const SubShapeID &inSubShapeID, uint &ou
 	// Fetch the x and y coordinate
 	outX = id % mSampleCount;
 	outY = id / mSampleCount;
+}
+
+void HeightFieldShape::GetSubShapeCoordinates(const SubShapeID &inSubShapeID, uint &outX, uint &outY, uint &outTriangleIndex) const
+{
+	DecodeSubShapeID(inSubShapeID, outX, outY, outTriangleIndex);
 }
 
 const PhysicsMaterial *HeightFieldShape::GetMaterial(const SubShapeID &inSubShapeID) const
@@ -1688,6 +1722,10 @@ public:
 		// Early out if there's no collision
 		if (mShape->mHeightSamplesSize == 0)
 			return;
+
+		// Assert that an inside-out bounding box does not collide
+		JPH_IF_ENABLE_ASSERTS(UVec4 dummy = UVec4::sReplicate(0);)
+		JPH_ASSERT(ioVisitor.VisitRangeBlock(Vec4::sReplicate(-1.0e6f), Vec4::sReplicate(1.0e6f), Vec4::sReplicate(-1.0e6f), Vec4::sReplicate(1.0e6f), Vec4::sReplicate(-1.0e6f), Vec4::sReplicate(1.0e6f), dummy, 0) == 0);
 
 		// Precalculate values relating to sample count
 		uint32 sample_count = mShape->mSampleCount;
@@ -2101,7 +2139,7 @@ void HeightFieldShape::CastRay(const RayCast &inRay, const RayCastSettings &inRa
 			mRayOrigin(inRay.mOrigin),
 			mRayDirection(inRay.mDirection),
 			mRayInvDirection(inRay.mDirection),
-			mBackFaceMode(inRayCastSettings.mBackFaceMode),
+			mBackFaceMode(inRayCastSettings.mBackFaceModeTriangles),
 			mShape(inShape),
 			mSubShapeIDCreator(inSubShapeIDCreator)
 		{
@@ -2185,6 +2223,9 @@ void HeightFieldShape::CollideSoftBodyVertices(Mat44Arg inCenterOfMassTransform,
 		{
 			// Get distance to vertex
 			Vec4 dist_sq = AABox4DistanceSqToPoint(mLocalPosition, inBoundsMinX, inBoundsMinY, inBoundsMinZ, inBoundsMaxX, inBoundsMaxY, inBoundsMaxZ);
+
+			// Clear distance for invalid bounds
+			dist_sq = Vec4::sSelect(Vec4::sReplicate(FLT_MAX), dist_sq, Vec4::sLessOrEqual(inBoundsMinY, inBoundsMaxY));
 
 			// Sort so that highest values are first (we want to first process closer hits and we process stack top to bottom)
 			return SortReverseAndStore(dist_sq, mClosestDistanceSq, ioProperties, &mDistanceStack[inStackTop]);

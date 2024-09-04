@@ -1,60 +1,49 @@
 // Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
-// SPDX-FileCopyrightText: 2021 Jorrit Rouwe
+// SPDX-FileCopyrightText: 2024 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
 #include <Jolt/Physics/Collision/Shape/ConvexShape.h>
-#ifdef JPH_DEBUG_RENDERER
-	#include <Jolt/Renderer/DebugRenderer.h>
-#endif // JPH_DEBUG_RENDERER
+#include <Jolt/Physics/PhysicsSettings.h>
 
 JPH_NAMESPACE_BEGIN
 
-/// Class that constructs a TaperedCapsuleShape
-class JPH_EXPORT TaperedCapsuleShapeSettings final : public ConvexShapeSettings
+/// Class that constructs a TaperedCylinderShape
+class JPH_EXPORT TaperedCylinderShapeSettings final : public ConvexShapeSettings
 {
-	JPH_DECLARE_SERIALIZABLE_VIRTUAL(JPH_EXPORT, TaperedCapsuleShapeSettings)
+	JPH_DECLARE_SERIALIZABLE_VIRTUAL(JPH_EXPORT, TaperedCylinderShapeSettings)
 
 	/// Default constructor for deserialization
-							TaperedCapsuleShapeSettings() = default;
+							TaperedCylinderShapeSettings() = default;
 
-	/// Create a tapered capsule centered around the origin with one sphere cap at (0, -inHalfHeightOfTaperedCylinder, 0) with radius inBottomRadius and the other at (0, inHalfHeightOfTaperedCylinder, 0) with radius inTopRadius
-							TaperedCapsuleShapeSettings(float inHalfHeightOfTaperedCylinder, float inTopRadius, float inBottomRadius, const PhysicsMaterial *inMaterial = nullptr);
-
-	/// Check if the settings are valid
-	bool					IsValid() const															{ return mTopRadius > 0.0f && mBottomRadius > 0.0f && mHalfHeightOfTaperedCylinder >= 0.0f; }
-
-	/// Checks if the settings of this tapered capsule make this shape a sphere
-	bool					IsSphere() const;
+	/// Create a tapered cylinder centered around the origin with bottom at (0, -inHalfHeightOfTaperedCylinder, 0) with radius inBottomRadius and top at (0, inHalfHeightOfTaperedCylinder, 0) with radius inTopRadius
+							TaperedCylinderShapeSettings(float inHalfHeightOfTaperedCylinder, float inTopRadius, float inBottomRadius, float inConvexRadius = cDefaultConvexRadius, const PhysicsMaterial *inMaterial = nullptr);
 
 	// See: ShapeSettings
 	virtual ShapeResult		Create() const override;
 
-	float					mHalfHeightOfTaperedCylinder = 0.0f;
+	float					mHalfHeight = 0.0f;
 	float					mTopRadius = 0.0f;
 	float					mBottomRadius = 0.0f;
+	float					mConvexRadius = 0.0f;
 };
 
-/// A capsule with different top and bottom radii
-class JPH_EXPORT TaperedCapsuleShape final : public ConvexShape
+/// A cylinder with different top and bottom radii
+class JPH_EXPORT TaperedCylinderShape final : public ConvexShape
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE
 
 	/// Constructor
-							TaperedCapsuleShape() : ConvexShape(EShapeSubType::TaperedCapsule) { }
-							TaperedCapsuleShape(const TaperedCapsuleShapeSettings &inSettings, ShapeResult &outResult);
+							TaperedCylinderShape() : ConvexShape(EShapeSubType::TaperedCylinder) { }
+							TaperedCylinderShape(const TaperedCylinderShapeSettings &inSettings, ShapeResult &outResult);
 
 	// See Shape::GetCenterOfMass
-	virtual Vec3			GetCenterOfMass() const override										{ return mCenterOfMass; }
+	virtual Vec3			GetCenterOfMass() const override										{ return Vec3(0, -0.5f * (mTop + mBottom), 0); }
 
 	// See Shape::GetLocalBounds
 	virtual AABox			GetLocalBounds() const override;
-
-	// See Shape::GetWorldSpaceBounds
-	virtual AABox			GetWorldSpaceBounds(Mat44Arg inCenterOfMassTransform, Vec3Arg inScale) const override;
-	using Shape::GetWorldSpaceBounds;
 
 	// See Shape::GetInnerRadius
 	virtual float			GetInnerRadius() const override											{ return min(mTopRadius, mBottomRadius); }
@@ -71,8 +60,17 @@ public:
 	// See ConvexShape::GetSupportFunction
 	virtual const Support *	GetSupportFunction(ESupportMode inMode, SupportBuffer &inBuffer, Vec3Arg inScale) const override;
 
+	// See: Shape::CollidePoint
+	virtual void			CollidePoint(Vec3Arg inPoint, const SubShapeIDCreator &inSubShapeIDCreator, CollidePointCollector &ioCollector, const ShapeFilter &inShapeFilter = { }) const override;
+
 	// See: Shape::CollideSoftBodyVertices
 	virtual void			CollideSoftBodyVertices(Mat44Arg inCenterOfMassTransform, Vec3Arg inScale, SoftBodyVertex *ioVertices, uint inNumVertices, float inDeltaTime, Vec3Arg inDisplacementDueToGravity, int inCollidingShapeIndex) const override;
+
+	// See Shape::GetTrianglesStart
+	virtual void			GetTrianglesStart(GetTrianglesContext &ioContext, const AABox &inBox, Vec3Arg inPositionCOM, QuatArg inRotation, Vec3Arg inScale) const override;
+
+	// See Shape::GetTrianglesNext
+	virtual int				GetTrianglesNext(GetTrianglesContext &ioContext, int inMaxTrianglesRequested, Float3 *outTriangleVertices, const PhysicsMaterial **outMaterials = nullptr) const override;
 
 #ifdef JPH_DEBUG_RENDERER
 	// See Shape::Draw
@@ -86,7 +84,7 @@ public:
 	virtual Stats			GetStats() const override												{ return Stats(sizeof(*this), 0); }
 
 	// See Shape::GetVolume
-	virtual float			GetVolume() const override												{ return GetLocalBounds().GetVolume(); } // Volume is approximate!
+	virtual float			GetVolume() const override;
 
 	// See Shape::IsValidScale
 	virtual bool			IsValidScale(Vec3Arg inScale) const override;
@@ -103,23 +101,19 @@ protected:
 
 private:
 	// Class for GetSupportFunction
-	class					TaperedCapsule;
+	class					TaperedCylinder;
 
-	/// Returns box that approximates the inertia
-	AABox					GetInertiaApproximation() const;
+	// Class for GetTrianglesTart
+	class					TCSGetTrianglesContext;
 
-	Vec3					mCenterOfMass = Vec3::sZero();
+	// Scale the cylinder
+	JPH_INLINE void			GetScaled(Vec3Arg inScale, float &outTop, float &outBottom, float &outTopRadius, float &outBottomRadius, float &outConvexRadius) const;
+
+	float					mTop = 0.0f;
+	float					mBottom = 0.0f;
 	float					mTopRadius = 0.0f;
 	float					mBottomRadius = 0.0f;
-	float					mTopCenter = 0.0f;
-	float					mBottomCenter = 0.0f;
 	float					mConvexRadius = 0.0f;
-	float					mSinAlpha = 0.0f;
-	float					mTanAlpha = 0.0f;
-
-#ifdef JPH_DEBUG_RENDERER
-	mutable DebugRenderer::GeometryRef mGeometry;
-#endif // JPH_DEBUG_RENDERER
 };
 
 JPH_NAMESPACE_END

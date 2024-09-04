@@ -10,11 +10,13 @@
 #include <Jolt/Core/TickCounter.h>
 #include <Jolt/Physics/Collision/CollisionDispatch.h>
 #include <Jolt/Physics/Collision/Shape/TriangleShape.h>
+#include <Jolt/Physics/Collision/Shape/PlaneShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/TaperedCylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
@@ -32,11 +34,13 @@ JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, CompoundShapeSettin
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, StaticCompoundShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, MutableCompoundShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, TriangleShapeSettings)
+JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, PlaneShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, SphereShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, BoxShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, CapsuleShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, TaperedCapsuleShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, CylinderShapeSettings)
+JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, TaperedCylinderShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, ScaledShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, MeshShapeSettings)
 JPH_DECLARE_RTTI_WITH_NAMESPACE_FOR_FACTORY(JPH_EXPORT, JPH, ConvexHullShapeSettings)
@@ -116,11 +120,13 @@ void RegisterTypesInternal(uint64 inVersionID)
 
 	// Leaf classes
 	TriangleShape::sRegister();
+	PlaneShape::sRegister();
 	SphereShape::sRegister();
 	BoxShape::sRegister();
 	CapsuleShape::sRegister();
 	TaperedCapsuleShape::sRegister();
 	CylinderShape::sRegister();
+	TaperedCylinderShape::sRegister();
 	MeshShape::sRegister();
 	ConvexHullShape::sRegister();
 	HeightFieldShape::sRegister();
@@ -139,11 +145,13 @@ void RegisterTypesInternal(uint64 inVersionID)
 		JPH_RTTI(StaticCompoundShapeSettings),
 		JPH_RTTI(MutableCompoundShapeSettings),
 		JPH_RTTI(TriangleShapeSettings),
+		JPH_RTTI(PlaneShapeSettings),
 		JPH_RTTI(SphereShapeSettings),
 		JPH_RTTI(BoxShapeSettings),
 		JPH_RTTI(CapsuleShapeSettings),
 		JPH_RTTI(TaperedCapsuleShapeSettings),
 		JPH_RTTI(CylinderShapeSettings),
+		JPH_RTTI(TaperedCylinderShapeSettings),
 		JPH_RTTI(ScaledShapeSettings),
 		JPH_RTTI(MeshShapeSettings),
 		JPH_RTTI(ConvexHullShapeSettings),
