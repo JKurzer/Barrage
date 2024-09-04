@@ -21,6 +21,9 @@ PRAGMA_PUSH_PLATFORM_DEFAULT_PACKING
 #include "Jolt/Physics/Body/BodyActivationListener.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
+#include "Jolt/Physics/Character/CharacterBase.h"
+#include "Jolt/Physics/Character/CharacterVirtual.h"
+#include "Jolt/Physics/Character/Character.h"
 // Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
 JPH_SUPPRESS_WARNINGS
 
@@ -33,3 +36,16 @@ class IsolatedJoltIncludes
 public:
 	
 };
+
+namespace JOLT
+{
+	using namespace JPH;
+	using namespace JPH::literals;
+
+	namespace BroadPhaseLayers
+	{
+		static constexpr BroadPhaseLayer NON_MOVING(0);
+		static constexpr BroadPhaseLayer MOVING(1);
+		static constexpr uint NUM_LAYERS(2);
+	};	
+}
