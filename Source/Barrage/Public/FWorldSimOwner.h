@@ -77,7 +77,9 @@ public:
 	const uint AllocationArenaSize = 100 * 1024 * 1024;
 	TSharedPtr<TempAllocatorImpl> Allocator;
 	// List of active characters in the scene so they can collide
-	CharacterVsCharacterCollisionSimple mCharacterVsCharacterCollision;
+	//https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/Jolt/Physics/Character/CharacterVirtual.h#L143
+	//note this is the only extant character collision handler, and it is not very efficient since it doesn't use a BSP.
+	CharacterVsCharacterCollisionSimple CharacterVsCharacterCollisionSimpleCharacterVsCharacterCollisionSimpleCharacterVsCharacterCollisionSimple;
 	// Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
 	// a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
 	// You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
