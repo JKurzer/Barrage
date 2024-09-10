@@ -65,8 +65,8 @@ namespace JOLT
 
 					// Create character
 					mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, World.Get());
-					//mCharacter->SetListener(this);
-					mCharacter->SetCharacterVsCharacterCollision(&Machine->mCharacterVsCharacterCollision); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
+					//mCharacter->SetListener(this); 
+					mCharacter->SetCharacterVsCharacterCollision(&HoldOpen->CharacterVsCharacterCollisionSimple); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
 				}
 			}
 		}
@@ -117,6 +117,25 @@ namespace JOLT
 
 			// Calculate effective velocity in this step
 			mEffectiveVelocity = Vec3(GetPosition() - start_pos) / mDeltaTime;
+		}
+
+
+		//To prevent cheeky bullshit and maximize the value we get from the queuing we already do, this
+		// should likely be called during step update OR during the locomotion step
+		//it should definitely run on the busy worker.
+		//we expect two sets of inputs into the state of the character:
+		//self-affecting player inputs
+		//everything else
+		//
+		//everything else is already covered by the FBPhysicsInput class, and handling that is converged.
+		//even most self abilities are likely to fall into everything else. Right now, I'm hoping we can use\adapt
+		//the existing locomotion machinery.
+		void IngestUpdate(Vec3 InputSpeed)
+		{
+			//could use a double buff here with an implicit swap, or a triple buff here for safety
+			//for now, just doing a direct set. This must occur prior to Update running.
+			mHorizontalSpeed = InputSpeed;
+			
 		}
 	};
 }
