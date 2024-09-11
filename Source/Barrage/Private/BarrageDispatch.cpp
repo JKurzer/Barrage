@@ -257,7 +257,7 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		//maintain tombstones
 		CleanTombs();
 		auto HoldOpen = JoltBodyLifecycleMapping;
-		if (HoldOpen != nullptr && HoldOpen.Get() && !HoldOpen.Get()->Empty())
+		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->IsEmpty())
 		{
 			for (auto& x : *HoldOpen.Get())
 			{
