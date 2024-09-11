@@ -108,6 +108,10 @@ public:
 };
 
 /// A height field shape. Cannot be used as a dynamic object.
+///
+/// Note: If you're using HeightFieldShape and are querying data while modifying the shape you'll have a race condition.
+/// In this case it is best to create a new HeightFieldShape using the Clone function. You replace the shape on a body using BodyInterface::SetShape.
+/// If a query is still working on the old shape, it will have taken a reference and keep the old shape alive until the query finishes.
 class JPH_EXPORT HeightFieldShape final : public Shape
 {
 public:
@@ -117,6 +121,9 @@ public:
 									HeightFieldShape() : Shape(EShapeType::HeightField, EShapeSubType::HeightField) { }
 									HeightFieldShape(const HeightFieldShapeSettings &inSettings, ShapeResult &outResult);
 	virtual							~HeightFieldShape() override;
+
+	/// Clone this shape. Can be used to avoid race conditions. See the documentation of this class for more information.
+	Ref<HeightFieldShape>			Clone() const;
 
 	// See Shape::MustBeStatic
 	virtual bool					MustBeStatic() const override				{ return true; }
@@ -186,6 +193,13 @@ public:
 	/// When there is no surface position (because of a hole or because the point is outside the heightfield) the function will return false.
 	bool							ProjectOntoSurface(Vec3Arg inLocalPosition, Vec3 &outSurfacePosition, SubShapeID &outSubShapeID) const;
 
+	/// Returns the coordinates of the triangle that a sub shape ID represents
+	/// @param inSubShapeID The sub shape ID to decode
+	/// @param outX X coordinate of the triangle (in the range [0, mSampleCount - 2])
+	/// @param outY Y coordinate of the triangle (in the range [0, mSampleCount - 2])
+	/// @param outTriangleIndex Triangle within the quad (0 = lower triangle or 1 = upper triangle)
+	void							GetSubShapeCoordinates(const SubShapeID &inSubShapeID, uint &outX, uint &outY, uint &outTriangleIndex) const;
+
 	/// Get the range of height values that this height field can encode. Can be used to determine the allowed range when setting the height values with SetHeights.
 	float							GetMinHeightValue() const					{ return mOffset.GetY(); }
 	float							GetMaxHeightValue() const					{ return mOffset.GetY() + mScale.GetY() * HeightFieldShapeConstants::cMaxHeightValue16; }
@@ -202,12 +216,13 @@ public:
 
 	/// Set the height values of a block of data.
 	/// Note that this requires decompressing and recompressing a border of size mBlockSize in the negative x/y direction so will cause some precision loss.
+	/// Beware this can create a race condition if you're running collision queries in parallel. See class documentation for more information.
 	/// @param inX Start X position, must be a multiple of mBlockSize and in the range [0, mSampleCount - 1]
 	/// @param inY Start Y position, must be a multiple of mBlockSize and in the range [0, mSampleCount - 1]
 	/// @param inSizeX Number of samples in X direction, must be a multiple of mBlockSize and in the range [0, mSampleCount - inX]
 	/// @param inSizeY Number of samples in Y direction, must be a multiple of mBlockSize and in the range [0, mSampleCount - inX]
 	/// @param inHeights The new height values to set, must be an array of inSizeX * inSizeY floats, can be cNoCollisionValue. Values outside of the range [GetMinHeightValue(), GetMaxHeightValue()] will be clamped.
-	/// @param inHeightsStride Stride in floats between two consecutive rows of outHeights (can be negative if the data is upside down).
+	/// @param inHeightsStride Stride in floats between two consecutive rows of inHeights (can be negative if the data is upside down).
 	/// @param inAllocator Allocator to use for temporary memory
 	/// @param inActiveEdgeCosThresholdAngle Cosine of the threshold angle (if the angle between the two triangles is bigger than this, the edge is active, note that a concave edge is always inactive).
 	void							SetHeights(uint inX, uint inY, uint inSizeX, uint inSizeY, const float *inHeights, intptr_t inHeightsStride, TempAllocator &inAllocator, float inActiveEdgeCosThresholdAngle = 0.996195f);
@@ -225,6 +240,7 @@ public:
 	void							GetMaterials(uint inX, uint inY, uint inSizeX, uint inSizeY, uint8 *outMaterials, intptr_t inMaterialsStride) const;
 
 	/// Set the material indices of a block of data.
+	/// Beware this can create a race condition if you're running collision queries in parallel. See class documentation for more information.
 	/// @param inX Start X position, must in the range [0, mSampleCount - 1]
 	/// @param inY Start Y position, must in the range [0, mSampleCount - 1]
 	/// @param inSizeX Number of samples in X direction
