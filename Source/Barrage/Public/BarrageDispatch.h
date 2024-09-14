@@ -30,6 +30,7 @@ public:
 	static FBBoxParams GenerateBoxBounds(FVector3d point, double xDiam, double yDiam, double zDiam);
 	static FBSphereParams GenerateSphereBounds(FVector3d point, double radius);
 	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
+	static FBCharParams GenerateCharacterBounds(FVector3d point, double radius, double extent, double taper);
 };
 
 namespace JOLT
@@ -73,6 +74,7 @@ public:
 	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
 	FBLet CreatePrimitive(FBBoxParams& Definition, ObjectKey Outkey, uint16 Layer);
+	FBLet CreatePrimitive(FBCharParams& Definition, ObjectKey Outkey, uint16 Layer);
 	FBLet CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer);
 	FBLet CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer);
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey);

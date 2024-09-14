@@ -102,6 +102,18 @@ FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKe
 	return FBLet();
 }
 
+//TODO: COMPLETE MOCK
+FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, ObjectKey OutKey, uint16_t Layer)
+{
+	auto HoldOpen = JoltGameSim;
+	if (HoldOpen)
+	{
+	//	auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+	//	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+	}
+	return FBLet();
+}
+
 FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16_t Layer)
 {
 	auto HoldOpen = JoltGameSim;
@@ -304,5 +316,17 @@ FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Caps
 	blob.point = Capsule.Center();
 	blob.JoltRadius = CoordinateUtils::RadiusToJolt(Capsule.Radius);
 	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(Capsule.Extent());
+	return blob;
+}
+
+//Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
+//subject to change. the Point is left in the UE space, signified by the UE type. 
+FBCharParams FBarrageBounder::GenerateCharacterBounds(FVector3d point, double radius, double extent, double taper)
+{
+	FBCharParams blob;
+	blob.point = point;
+	blob.JoltRadius = CoordinateUtils::RadiusToJolt(radius);
+	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(extent);
+	blob.taper = taper;
 	return blob;
 }
