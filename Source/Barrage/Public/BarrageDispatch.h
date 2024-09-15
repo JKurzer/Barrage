@@ -8,6 +8,7 @@
 #include "Chaos/Particles.h"
 #include "CapsuleTypes.h"
 #include "FBarragePrimitive.h"
+#include "FBPhysicsInput.h"
 #include "Containers/CircularQueue.h"
 #include "FBShapeParams.h"
 #include "BarrageDispatch.generated.h"
@@ -104,7 +105,10 @@ public:
 	TSharedPtr< JOLT::FWorldSimOwner> JoltGameSim;
 
 	//StackUp should be called before stepworld and from the same thread. anything can be done between them.
-	void StackUp();
+	//Returns rather than applies the FBPhysicsInputs that affect Primitives of Types: Character
+	//This list may expand. Failure to handle these will result in catastrophic bugs.
+	TSharedPtr<TArray<FBPhysicsInput>> StackUp();
+	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs);
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
 	void StepWorld(uint64 Time);
 

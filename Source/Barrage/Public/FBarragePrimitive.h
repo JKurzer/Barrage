@@ -20,7 +20,8 @@ public:
 		Capsule,
 		Box,
 		Sphere,
-		Static
+		Static,
+		Character
 	};
 	//you cannot safely reorder these or it will change the pack width.
 	FBarrageKey KeyIntoBarrage; 
@@ -69,7 +70,7 @@ public:
 		//This should be called from the gamethread, in the PULL model. it doesn't lock, but it will fail if the lock is held on that body
 		//because we should _never_ block the game thread. unfortunately, this means I can't provide the code to actually use
 		//this as part of jolt very easily at first, but I'll try to defactor whatever I built into a sample implementation for Barrage.
-		static bool TryGetTransformFromJolt(FBLet Target, uint64 Time);
+		static bool TryUpdateTransformFromJolt(FBLet Target, uint64 Time);
 		static FVector3f GetCentroidPossiblyStale(FBLet Target);
 		//tombstoned primitives are treated as null even by live references, because while the primitive is valid
 		//and operations against it can be performed safely, no new operations should be allowed to start.
