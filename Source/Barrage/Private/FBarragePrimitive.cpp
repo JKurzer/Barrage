@@ -43,7 +43,7 @@ void FBarragePrimitive::ApplyRotation(FQuat4d Rotator, FBLet Target)
 }
 
 //generally, this should be called from the same thread as update.
-bool FBarragePrimitive::TryGetTransformFromJolt(FBLet Target, uint64 Time)
+bool FBarragePrimitive::TryUpdateTransformFromJolt(FBLet Target, uint64 Time)
 {
 	if (IsNotNull(Target))
 	{

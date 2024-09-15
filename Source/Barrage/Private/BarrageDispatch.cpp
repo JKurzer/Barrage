@@ -219,9 +219,11 @@ TStatId UBarrageDispatch::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UBarrageDispatch, STATGROUP_Tickables);
 }
 
-void UBarrageDispatch::StackUp()
+TSharedPtr<TArray<FBPhysicsInput>> UBarrageDispatch::StackUp()
 {
 	auto WorldSimOwner = JoltGameSim;
+	//currently, these are only characters but that could change. This would likely become a TMap then but maybe not.
+	TSharedPtr<TArray<FBPhysicsInput>> UnprocessedInputs = MakeShareable(new TArray<FBPhysicsInput>());
 	if (WorldSimOwner)
 	{
 		for (auto& x : WorldSimOwner->ThreadAcc)
@@ -233,7 +235,12 @@ void UBarrageDispatch::StackUp()
 				{
 					auto input = HoldOpen->Peek();
 					auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
-					if (input->Action == PhysicsInputType::Rotation)
+					if (input->Target->Me == FBarragePrimitive::Character)
+					{
+						auto InputCopy = *input;
+						UnprocessedInputs->Add(InputCopy);
+					}
+					else if (input->Action == PhysicsInputType::Rotation)
 					{
 						//prolly gonna wanna change this to add torque................... not sure.
 						WorldSimOwner->body_interface->SetRotation(*bID, input->State, JPH::EActivation::Activate);
@@ -255,9 +262,16 @@ void UBarrageDispatch::StackUp()
 					}
 					HoldOpen->Dequeue();
 				}
+
 			}
 		}
 	}
+	return UnprocessedInputs;
+}
+
+bool UBarrageDispatch::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs)
+{
+	return false;
 }
 
 void UBarrageDispatch::StepWorld(uint64 Time)
@@ -276,7 +290,8 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 				auto RefHoldOpen = x.Value;
 				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
 				{
-					FBarragePrimitive::TryGetTransformFromJolt(x.Value, Time);
+					
+					FBarragePrimitive::TryUpdateTransformFromJolt(x.Value, Time);
 					//returns a bool that can be used for debug.
 				}
 			}
