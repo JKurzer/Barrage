@@ -24,9 +24,10 @@ namespace JOLT
 		float mRadiusStanding = 0.3f;
 		JPH::CharacterVirtualSettings mCharacterSettings;
 		CharacterVirtual::ExtendedUpdateSettings mUpdateSettings;
-		// Character movement settings (update to control the movement of the character)
-		Vec3 mHorizontalSpeed = Vec3::sZero();
-		float mJumpSpeed = 0.0f; // Character will jump when not 0, will auto reset
+		// Accumulated during IngestUpdate
+		Vec3 mVelocityUpdate = Vec3::sZero();
+		Vec3 mForcesUpdate = Vec3::sZero();
+		JPH::Quat mCapsuleRotationUpdate = JPH::Quat::sIdentity();
 		Ref<CharacterVirtual> mCharacter;
 		float mDeltaTime;
 
@@ -75,29 +76,26 @@ namespace JOLT
 			// Determine new basic velocity
 			Vec3 current_vertical_velocity = Vec3(0, mCharacter->GetLinearVelocity().GetY(), 0);
 			Vec3 ground_velocity = mCharacter->GetGroundVelocity();
-			Vec3 new_velocity;
+			Vec3 new_velocity = mForcesUpdate;
 
+			//this ensures small forces won't knock us off the ground, vastly reducing jitter.
 			if (mCharacter->GetGroundState() == CharacterVirtual::EGroundState::OnGround // If on ground
-				&& (current_vertical_velocity.GetY() - ground_velocity.GetY()) < 0.1f)
+				&& (current_vertical_velocity.GetY() - ground_velocity.GetY()) < 0.3f)
 			// And not moving away from ground
 			{
 				// Assume velocity of ground when on ground
-				new_velocity = ground_velocity;
-
-				// Jump
-				new_velocity += Vec3(0, mJumpSpeed, 0);
-				mJumpSpeed = 0.0f;
+				new_velocity += ground_velocity;
 			}
 			else
 			{
-				new_velocity = current_vertical_velocity;
+				new_velocity += ground_velocity + current_vertical_velocity;
 			}
 
 			// Gravity
 			new_velocity += World->GetGravity() * mDeltaTime;
 
 			// Player input
-			new_velocity += mHorizontalSpeed;
+			new_velocity += mVelocityUpdate;
 
 			// Update character velocity
 			mCharacter->SetLinearVelocity(new_velocity);
@@ -123,18 +121,20 @@ namespace JOLT
 		//To prevent cheeky bullshit and maximize the value we get from the queuing we already do, this
 		// should likely be called during step update OR during the locomotion step
 		//it should definitely run on the busy worker.
-		//we expect two sets of inputs into the state of the character:
-		//self-affecting player inputs
-		//everything else
-		//
-		//everything else is already covered by the FBPhysicsInput class, and handling that is converged.
-		//even most self abilities are likely to fall into everything else. Right now, I'm hoping we can use\adapt
-		//the existing locomotion machinery.
-		void IngestUpdate(Vec3 InputSpeed)
+		void IngestUpdate(FBPhysicsInput& input)
 		{
-			//could use a double buff here with an implicit swap, or a triple buff here for safety
-			//for now, just doing a direct set. This must occur prior to Update running.
-			mHorizontalSpeed = InputSpeed;
+			if (input.Action == PhysicsInputType::Rotation)
+			{
+				mCapsuleRotationUpdate = input.State;
+			}
+			else if (input.Action == PhysicsInputType::OtherForce)
+			{
+				mForcesUpdate += input.State.GetXYZ();
+			}
+			else if (input.Action == PhysicsInputType::Velocity || input.Action == PhysicsInputType::SelfMovement)
+			{
+				mVelocityUpdate += input.State.GetXYZ();
+			}
 			
 		}
 	};
