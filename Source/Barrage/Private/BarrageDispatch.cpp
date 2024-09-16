@@ -304,8 +304,6 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 				}
 			}
 		}
-	throw;//gotta add the character updates here
-		//idk what to do about character collision.
 	}
 }
 
