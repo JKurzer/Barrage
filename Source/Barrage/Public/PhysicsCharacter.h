@@ -16,7 +16,7 @@ namespace JOLT
 	// this will get hidden in the cpp prolly to some extent.
 	// you might see some use of jolt coding conventions when working in the barrage codebase.
 
-	class FJoltCharacter
+	class FBCharacter
 	{
 	public:
 		JPH::RVec3 mInitialPosition = JPH::RVec3::sZero();
@@ -68,6 +68,7 @@ namespace JOLT
 					mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, World.Get());
 					//mCharacter->SetListener(this); 
 					mCharacter->SetCharacterVsCharacterCollision(&HoldOpen->CharacterVsCharacterCollisionSimple); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
+					HoldOpen->CharacterToJoltMapping->Get()->Add(mCharacter->GetInnerBodyID(), this); //I am going to regret this somehow.
 				}
 			}
 		}
