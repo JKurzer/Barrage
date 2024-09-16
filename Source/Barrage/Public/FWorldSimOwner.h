@@ -15,7 +15,6 @@
 
 #include "SkeletonTypes.h"
 #include "IsolatedJoltIncludes.h"
-#include "PhysicsCharacter.h"
 #include "PhysicsEngine/BodySetup.h"
 
 // All Jolt symbols are in the JPH namespace
@@ -60,11 +59,36 @@ namespace Layers
 
 namespace JOLT
 {
+class FBCharacterBase
+{
+public:
+	virtual ~FBCharacterBase() = default;
+	JPH::RVec3 mInitialPosition = JPH::RVec3::sZero();
+	float mHeightStanding = 1.35f;
+	float mRadiusStanding = 0.3f;
+	JPH::CharacterVirtualSettings mCharacterSettings;
+	CharacterVirtual::ExtendedUpdateSettings mUpdateSettings;
+	// Accumulated during IngestUpdate
+	Vec3 mVelocityUpdate = Vec3::sZero();
+	Vec3 mForcesUpdate = Vec3::sZero();
+	JPH::Quat mCapsuleRotationUpdate = JPH::Quat::sIdentity();
+	Ref<CharacterVirtual> mCharacter;
+	float mDeltaTime;
 
+	// Calculated effective velocity after a step
+	Vec3 mEffectiveVelocity = Vec3::sZero();
+	virtual void IngestUpdate(FBPhysicsInput& input) = 0;
+	virtual void StepCharacter() = 0;
+	
+protected:
+	friend class FWorldSimOwner;
+	TWeakPtr<FWorldSimOwner> Machine;
+	TSharedPtr<JPH::PhysicsSystem, ESPMode::ThreadSafe> World;
+};
 
 class FWorldSimOwner
 {
-
+	
 	// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
 
 
@@ -208,7 +232,7 @@ public:
 public:
 	//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
 	TSharedPtr<TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
-	TSharedPtr<TMap<BodyID, FBCharacter*>> CharacterToJoltMapping;
+	TSharedPtr<TMap<FBarrageKey, TSharedPtr<FBCharacterBase>>> CharacterToJoltMapping;
 	using ThreadFeed = TCircularQueue<FBPhysicsInput>;
 
 	struct FeedMap
@@ -290,6 +314,7 @@ public:
 	//very easy to read for people who are probably already drowning in new types.
 	//finally, it allows FBShapeParams to be a POD and so we can reason about it really easily.
 	FBarrageKey CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer);
+	FBarrageKey CreatePrimitive(FBCharParams& ToCreate, uint16 Layer);
 	FBarrageKey CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer);
 	FBarrageKey CreatePrimitive(FBCapParams& ToCreate, uint16 Layer);
 

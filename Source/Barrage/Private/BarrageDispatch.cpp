@@ -108,8 +108,8 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, ObjectKey OutK
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-	//	auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
-	//	return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 	}
 	return FBLet();
 }
@@ -283,9 +283,9 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		auto HoldOpenCharacters = JoltGameSim->CharacterToJoltMapping;
 		if(HoldOpenCharacters)
 		{
-			for(JOLT::FBCharacter* x : HoldOpenCharacters.Get())
+			for(auto x : *HoldOpenCharacters)
 			{
-				x->StepCharacter();
+				x.Value->StepCharacter();
 			}
 		}
 		//maintain tombstones
@@ -293,7 +293,7 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		auto HoldOpen = JoltBodyLifecycleMapping;
 		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->IsEmpty())
 		{
-			for (auto& x : *HoldOpen.Get())
+			for (auto& x : *HoldOpen)
 			{
 				auto RefHoldOpen = x.Value;
 				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))

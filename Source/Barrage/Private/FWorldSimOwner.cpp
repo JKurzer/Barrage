@@ -1,5 +1,6 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
+#include "PhysicsCharacter.h"
 
 namespace JOLT
 {
@@ -9,7 +10,7 @@ namespace JOLT
 		// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
 		// This needs to be done before any other Jolt function is called.
 		BarrageToJoltMapping = MakeShareable(new TMap<FBarrageKey, BodyID>());
-		CharacterToJoltMapping = MakeShareable(new TMap<BodyID, FBCharacter*>());
+		CharacterToJoltMapping = MakeShareable(new TMap<FBarrageKey, TSharedPtr<FBCharacterBase>>());
 		RegisterDefaultAllocator();
 		contact_listener = MakeShareable(new MyContactListener());
 		body_activation_listener = MakeShareable(new MyBodyActivationListener());
@@ -89,6 +90,29 @@ namespace JOLT
 		return static_cast<FBarrageKey>(KeyCompose);
 	}
 
+	//we need the coordinate utils, but we don't really want to include them in the .h
+	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBCharParams& ToCreate, uint16 Layer)
+	{
+		uint64_t KeyCompose;
+		KeyCompose = PointerHash(this);
+		KeyCompose = KeyCompose << 32;
+		BodyID BodyIDTemp = BodyID();
+		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
+		TSharedPtr<FBCharacter> NewCharacter = MakeShareable<FBCharacter>(new FBCharacter);
+		NewCharacter->mHeightStanding = 2 * ToCreate.JoltHalfHeightOfCylinder;
+		NewCharacter->mRadiusStanding = ToCreate.JoltRadius;
+		NewCharacter->mInitialPosition = CoordinateUtils::ToJoltCoordinates(ToCreate.point);
+		NewCharacter->World = this->physics_system;
+		//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
+		// Create the shape
+		BodyIDTemp = NewCharacter->Create(&this->CharacterVsCharacterCollisionSimple);
+		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
+		//Barrage key is unique to WORLD and BODY. This is crushingly important.
+		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
+		CharacterToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), NewCharacter);
+
+		return static_cast<FBarrageKey>(KeyCompose);
+	}
 
 	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer)
 	{
@@ -180,12 +204,13 @@ namespace JOLT
 
 	bool FWorldSimOwner::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> Array)
 	{
-		for(FBPhysicsInput& update : Array.Get())
+		for(auto& update : *Array)
 		{
+			auto key = update.Target.Get()->KeyIntoBarrage;
 			auto CharacterInner = BarrageToJoltMapping->Find(update.Target.Get()->KeyIntoBarrage);
 			if(CharacterInner)
 			{
-				auto CharacterOuter = CharacterToJoltMapping->Find(*CharacterInner);
+				auto CharacterOuter = CharacterToJoltMapping->Find(key);
 				if(CharacterOuter)
 				{
 					(*CharacterOuter)->IngestUpdate(update);

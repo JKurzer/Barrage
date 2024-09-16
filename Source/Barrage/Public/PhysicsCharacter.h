@@ -16,28 +16,9 @@ namespace JOLT
 	// this will get hidden in the cpp prolly to some extent.
 	// you might see some use of jolt coding conventions when working in the barrage codebase.
 
-	class FBCharacter
+	class FBCharacter : public FBCharacterBase
 	{
-	public:
-		JPH::RVec3 mInitialPosition = JPH::RVec3::sZero();
-		float mHeightStanding = 1.35f;
-		float mRadiusStanding = 0.3f;
-		JPH::CharacterVirtualSettings mCharacterSettings;
-		CharacterVirtual::ExtendedUpdateSettings mUpdateSettings;
-		// Accumulated during IngestUpdate
-		Vec3 mVelocityUpdate = Vec3::sZero();
-		Vec3 mForcesUpdate = Vec3::sZero();
-		JPH::Quat mCapsuleRotationUpdate = JPH::Quat::sIdentity();
-		Ref<CharacterVirtual> mCharacter;
-		float mDeltaTime;
 
-		// Calculated effective velocity after a step
-		Vec3 mEffectiveVelocity = Vec3::sZero();
-
-	protected:
-		friend class FWorldSimOwner;
-		TWeakPtr<FWorldSimOwner> Machine;
-		TSharedPtr<JPH::PhysicsSystem, ESPMode::ThreadSafe> World;
 
 	public:
 		RVec3 GetPosition() const
@@ -46,13 +27,13 @@ namespace JOLT
 		}
 
 		// Create the character
-		void Create()
+		// Fails if the mProperties are not correctly set.
+		BodyID Create(CharacterVsCharacterCollision* CVCColliderSystem)
 		{
+			BodyID ret = BodyID();
 			// Create capsule
-			auto HoldOpen = Machine.Pin();
-			if(HoldOpen)
+			if(World) 
 			{
-				World = HoldOpen->physics_system; // this MAY lead to a circ ref?  I think I've avoided it using the weak ptr to FWorldSimOwner
 				//WorldSimOwner manages the lifecycle of the physics characters. we don't have a proper destructor in here yet, I'm just trying to get this UP for now.
 				if(World)
 				{
@@ -63,14 +44,14 @@ namespace JOLT
 					// Configure supporting volume
 					mCharacterSettings.mSupportingVolume = Plane(Vec3::sAxisY(), -mHeightStanding);
 					// Accept contacts that touch the lower sphere of the capsule
-
 					// Create character
 					mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, World.Get());
 					//mCharacter->SetListener(this); 
-					mCharacter->SetCharacterVsCharacterCollision(&HoldOpen->CharacterVsCharacterCollisionSimple); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
-					HoldOpen->CharacterToJoltMapping->Get()->Add(mCharacter->GetInnerBodyID(), this); //I am going to regret this somehow.
+					mCharacter->SetCharacterVsCharacterCollision(CVCColliderSystem); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
+					ret = mCharacter->GetInnerBodyID(); //I am going to regret this somehow.
 				}
 			}
+			return ret;
 		}
 		void StepCharacter()
 		{
@@ -122,7 +103,7 @@ namespace JOLT
 		//To prevent cheeky bullshit and maximize the value we get from the queuing we already do, this
 		// should likely be called during step update OR during the locomotion step
 		//it should definitely run on the busy worker.
-		void IngestUpdate(FBPhysicsInput& input)
+		virtual void IngestUpdate(FBPhysicsInput& input) override
 		{
 			if (input.Action == PhysicsInputType::Rotation)
 			{
