@@ -1,5 +1,6 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
+
 namespace JOLT
 {
 	FWorldSimOwner::FWorldSimOwner(float cDeltaTime)
@@ -8,6 +9,7 @@ namespace JOLT
 		// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
 		// This needs to be done before any other Jolt function is called.
 		BarrageToJoltMapping = MakeShareable(new TMap<FBarrageKey, BodyID>());
+		CharacterToJoltMapping = MakeShareable(new TMap<BodyID, FBCharacter*>());
 		RegisterDefaultAllocator();
 		contact_listener = MakeShareable(new MyContactListener());
 		body_activation_listener = MakeShareable(new MyBodyActivationListener());
@@ -174,5 +176,23 @@ namespace JOLT
 		magic.UnlockWrite(magic.GetAllBodiesMutexMask());
 		job_system.Reset();
 		Allocator.Reset();
+	}
+
+	bool FWorldSimOwner::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> Array)
+	{
+		for(FBPhysicsInput& update : Array.Get())
+		{
+			auto CharacterInner = BarrageToJoltMapping->Find(update.Target.Get()->KeyIntoBarrage);
+			if(CharacterInner)
+			{
+				auto CharacterOuter = CharacterToJoltMapping->Find(*CharacterInner);
+				if(CharacterOuter)
+				{
+					(*CharacterOuter)->IngestUpdate(update);
+				}
+			}
+			
+		}
+		return true;
 	}
 }

@@ -271,7 +271,7 @@ TSharedPtr<TArray<FBPhysicsInput>> UBarrageDispatch::StackUp()
 
 bool UBarrageDispatch::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs)
 {
-	return false;
+	return JoltGameSim->UpdateCharacters(CharacterInputs);
 }
 
 void UBarrageDispatch::StepWorld(uint64 Time)
@@ -280,6 +280,14 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 	if (HoldOpenWorld)
 	{
 		JoltGameSim->StepSimulation();
+		auto HoldOpenCharacters = JoltGameSim->CharacterToJoltMapping;
+		if(HoldOpenCharacters)
+		{
+			for(JOLT::FBCharacter* x : HoldOpenCharacters.Get())
+			{
+				x->StepCharacter();
+			}
+		}
 		//maintain tombstones
 		CleanTombs();
 		auto HoldOpen = JoltBodyLifecycleMapping;
@@ -296,6 +304,8 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 				}
 			}
 		}
+	throw;//gotta add the character updates here
+		//idk what to do about character collision.
 	}
 }
 

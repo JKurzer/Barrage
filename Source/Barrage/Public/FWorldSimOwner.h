@@ -15,6 +15,7 @@
 
 #include "SkeletonTypes.h"
 #include "IsolatedJoltIncludes.h"
+#include "PhysicsCharacter.h"
 #include "PhysicsEngine/BodySetup.h"
 
 // All Jolt symbols are in the JPH namespace
@@ -207,6 +208,7 @@ public:
 public:
 	//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
 	TSharedPtr<TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
+	TSharedPtr<TMap<BodyID, FBCharacter*>> CharacterToJoltMapping;
 	using ThreadFeed = TCircularQueue<FBPhysicsInput>;
 
 	struct FeedMap
@@ -411,6 +413,7 @@ public:
 	}
 
 	~FWorldSimOwner();
+	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> Array);
 };
 
 }
