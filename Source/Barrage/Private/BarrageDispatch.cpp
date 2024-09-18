@@ -152,15 +152,14 @@ FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarr
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
-                                              const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey,
-                                              FBarrageKey& InKey)
+                                              const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey, InKey);
-		JoltBodyLifecycleMapping->Add(InKey, shared);
-		TranslationMapping->Add(Outkey, InKey);
+		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
+		JoltBodyLifecycleMapping->Add(shared->KeyIntoBarrage, shared);
+		TranslationMapping->Add(Outkey, shared->KeyIntoBarrage);
 		return shared;
 	}
 	return FBLet();

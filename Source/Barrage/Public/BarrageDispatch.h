@@ -78,7 +78,7 @@ public:
 	FBLet CreatePrimitive(FBCharParams& Definition, ObjectKey Outkey, uint16 Layer);
 	FBLet CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer);
 	FBLet CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer);
-	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey, FBarrageKey& InKey);
+	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey);
 	FBLet GetShapeRef(FBarrageKey Existing) const;
 	FBLet GetShapeRef(ObjectKey Existing) const;
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);

@@ -319,8 +319,7 @@ public:
 	FBarrageKey CreatePrimitive(FBCapParams& ToCreate, uint16 Layer);
 
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition,
-	                                              const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey,
-	                                              FBarrageKey& InKey)
+	                                              const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey)
 	{
 		using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
 		using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
@@ -410,9 +409,11 @@ public:
 		creation_settings.SetShape(shape);
 		auto bID = body_interface->CreateAndAddBody(creation_settings, EActivation::Activate);
 
-		BarrageToJoltMapping->Add(InKey, bID);
-
-		auto shared = MakeShareable(new FBarragePrimitive(InKey, Outkey));
+		uint64_t KeyCompose = PointerHash(this);
+		KeyCompose = KeyCompose << 32;
+		KeyCompose |= bID.GetIndexAndSequenceNumber();
+		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), bID);
+		FBLet shared = MakeShareable(new FBarragePrimitive(static_cast<FBarrageKey>(KeyCompose), Outkey));
 
 		return shared;
 	}
