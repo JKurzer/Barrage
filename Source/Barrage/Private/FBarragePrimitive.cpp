@@ -12,7 +12,7 @@ FBarragePrimitive::~FBarragePrimitive()
 	//Only the CleanTombs function in dispatch actually releases the shared pointer on the dispatch side
 	//but an actor might hold a shared pointer to the primitive that represents it after that primitive has been
 	//popped out of this.
-	if (GlobalBarrage != nullptr)
+	if (GlobalBarrage != nullptr && Me != Character) //TODO: This prevented the double free but we may now not free at all?
 	{
 		GlobalBarrage->FinalizeReleasePrimitive(KeyIntoBarrage);
 	}

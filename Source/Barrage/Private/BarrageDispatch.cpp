@@ -109,7 +109,7 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, ObjectKey OutK
 	if (HoldOpen)
 	{
 		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
-		return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
+		return ManagePointers(OutKey, temp, FBarragePrimitive::Character);
 	}
 	return FBLet();
 }
