@@ -74,7 +74,11 @@ namespace JOLT
 		ShapeSettings::ShapeResult box = box_settings.Create();
 		ShapeRefC box_shape = box.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
 		// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-		BodyCreationSettings box_body_settings(box_shape, CoordinateUtils::ToJoltCoordinates(ToCreate.point), Quat::sIdentity(), MovementType, Layer);
+		BodyCreationSettings box_body_settings(box_shape,
+			CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
+			Quat::sIdentity(),
+			MovementType,
+			Layer);
 		// Create the actual rigid body
 		Body* box_body = body_interface->CreateBody(box_body_settings); // Note that if we run out of bodies this can return nullptr
 
@@ -123,7 +127,7 @@ namespace JOLT
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 	
 		BodyCreationSettings sphere_settings(new SphereShape(ToCreate.JoltRadius),
-												 CoordinateUtils::ToJoltCoordinates(ToCreate.point),
+												 CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
 												 Quat::sIdentity(),
 												 MovementType,
 												 Layer);
@@ -143,7 +147,7 @@ namespace JOLT
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 		BodyCreationSettings cap_settings(new CapsuleShape(ToCreate.JoltHalfHeightOfCylinder, ToCreate.JoltRadius),
-											 CoordinateUtils::ToJoltCoordinates(ToCreate.point),
+											 CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
 											 Quat::sIdentity(),
 											 MovementType,
 											 Layer);
