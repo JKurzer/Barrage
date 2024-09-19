@@ -158,8 +158,11 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 	if (HoldOpen)
 	{
 		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
-		JoltBodyLifecycleMapping->Add(shared->KeyIntoBarrage, shared);
-		TranslationMapping->Add(Outkey, shared->KeyIntoBarrage);
+		if(shared)
+		{
+			JoltBodyLifecycleMapping->Add(shared->KeyIntoBarrage, shared);
+			TranslationMapping->Add(Outkey, shared->KeyIntoBarrage);
+		}
 		return shared;
 	}
 	return FBLet();
