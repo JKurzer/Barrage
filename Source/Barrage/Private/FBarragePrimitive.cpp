@@ -105,6 +105,36 @@ FVector3f FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 	return FVector3f::ZeroVector;
 }
 
+FVector3f FBarragePrimitive::GetVelocityDirection(FBLet Target)
+{
+	if (IsNotNull(Target))
+	{
+		if (GlobalBarrage)
+		{
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim
+				&& IsNotNull(Target)
+				&& MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			{
+				auto bID = HoldOpenGameSim->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+				if(bID && Target->Me != FBShape::Character)
+				{
+					auto velo = HoldOpenGameSim->body_interface->GetLinearVelocity(*bID);
+					return CoordinateUtils::FromJoltCoordinates(velo);
+				}
+				if(bID && Target->Me == FBShape::Character)
+				{
+					auto CharacterActual = HoldOpenGameSim->CharacterToJoltMapping->Find(Target->KeyIntoBarrage);
+					if(CharacterActual && *CharacterActual)
+					{
+						return CoordinateUtils::FromJoltCoordinates(CharacterActual->Get()->mEffectiveVelocity);
+					}
+				}
+			}
+		}
+	}
+	return FVector3f();
+}
 
 void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 {
