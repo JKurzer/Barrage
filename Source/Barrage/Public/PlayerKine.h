@@ -10,7 +10,7 @@ public:
 	TWeakObjectPtr<AActor> MySelf;
 	
 	explicit PlayerKine(const TWeakObjectPtr<AActor>& MySelf, const ActorKey& Target)
-		: MySelf(MySelf)
+		: ActorKine(MySelf, Target), MySelf(MySelf)
 	{
 		MyKey = Target;
 	}
