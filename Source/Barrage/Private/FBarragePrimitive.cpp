@@ -16,6 +16,10 @@ FBarragePrimitive::~FBarragePrimitive()
 	{
 		GlobalBarrage->FinalizeReleasePrimitive(KeyIntoBarrage);
 	}
+	else if (Me == Character)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Character's last fblet is dealloc'd."));
+	}
 }
 
 //-----------------
