@@ -221,11 +221,10 @@ TStatId UBarrageDispatch::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UBarrageDispatch, STATGROUP_Tickables);
 }
 
-TSharedPtr<TArray<FBPhysicsInput>> UBarrageDispatch::StackUp()
+void UBarrageDispatch::StackUp()
 {
 	auto WorldSimOwner = JoltGameSim;
 	//currently, these are only characters but that could change. This would likely become a TMap then but maybe not.
-	TSharedPtr<TArray<FBPhysicsInput>> UnprocessedInputs = MakeShareable(new TArray<FBPhysicsInput>());
 	if (WorldSimOwner)
 	{
 		for (auto& x : WorldSimOwner->ThreadAcc)
@@ -239,8 +238,7 @@ TSharedPtr<TArray<FBPhysicsInput>> UBarrageDispatch::StackUp()
 					auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
 					if (input->Target->Me == FBarragePrimitive::Character)
 					{
-						auto InputCopy = *input;
-						UnprocessedInputs->Add(InputCopy);
+						UpdateCharacter(const_cast<FBPhysicsInput&>(*input));
 					}
 					else if (input->Action == PhysicsInputType::Rotation)
 					{
@@ -268,12 +266,16 @@ TSharedPtr<TArray<FBPhysicsInput>> UBarrageDispatch::StackUp()
 			}
 		}
 	}
-	return UnprocessedInputs;
 }
 
 bool UBarrageDispatch::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs)
 {
 	return JoltGameSim->UpdateCharacters(CharacterInputs);
+}
+
+bool UBarrageDispatch::UpdateCharacter(FBPhysicsInput& CharacterInput)
+{
+	return JoltGameSim->UpdateCharacter(CharacterInput);
 }
 
 void UBarrageDispatch::StepWorld(uint64 Time)

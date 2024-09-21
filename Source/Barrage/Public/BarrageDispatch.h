@@ -107,8 +107,9 @@ public:
 	//StackUp should be called before stepworld and from the same thread. anything can be done between them.
 	//Returns rather than applies the FBPhysicsInputs that affect Primitives of Types: Character
 	//This list may expand. Failure to handle these will result in catastrophic bugs.
-	TSharedPtr<TArray<FBPhysicsInput>> StackUp();
+	void StackUp();
 	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs);
+	bool UpdateCharacter(FBPhysicsInput& CharacterInput);
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
 	void StepWorld(uint64 Time);
 

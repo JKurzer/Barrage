@@ -59,7 +59,7 @@ namespace JOLT
 			Vec3 current_vertical_velocity = Vec3(0, mCharacter->GetLinearVelocity().GetY(), 0);
 			Vec3 ground_velocity = mCharacter->GetGroundVelocity();
 			Vec3 new_velocity = mForcesUpdate;
-
+			mForcesUpdate = Vec3::sZero();
 			//this ensures small forces won't knock us off the ground, vastly reducing jitter.
 			if (mCharacter->GetGroundState() == CharacterVirtual::EGroundState::OnGround // If on ground
 				&& (current_vertical_velocity.GetY() - ground_velocity.GetY()) < 0.3f)

@@ -73,7 +73,7 @@ public:
 		static bool TryUpdateTransformFromJolt(FBLet Target, uint64 Time);
 		static FVector3f GetCentroidPossiblyStale(FBLet Target);
 
-		static FVector3f GetVelocityDirection(FBLet Target);
+		static FVector3f GetVelocity(FBLet Target);
 		//tombstoned primitives are treated as null even by live references, because while the primitive is valid
 		//and operations against it can be performed safely, no new operations should be allowed to start.
 		//the tombstone period is effectively a grace period due to the fact that we have quite a lot of different

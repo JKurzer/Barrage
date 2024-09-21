@@ -106,7 +106,7 @@ FVector3f FBarragePrimitive::GetCentroidPossiblyStale(FBLet Target)
 	return FVector3f::ZeroVector;
 }
 
-FVector3f FBarragePrimitive::GetVelocityDirection(FBLet Target)
+FVector3f FBarragePrimitive::GetVelocity(FBLet Target)
 {
 	if (IsNotNull(Target))
 	{
