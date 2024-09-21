@@ -74,8 +74,10 @@ namespace JOLT
 			}
 
 			// Gravity
-			new_velocity += World->GetGravity() * mDeltaTime;
-
+			if(World)
+			{
+				new_velocity += World->GetGravity() * mDeltaTime;
+			}
 			// Player input
 			new_velocity += mVelocityUpdate;
 
