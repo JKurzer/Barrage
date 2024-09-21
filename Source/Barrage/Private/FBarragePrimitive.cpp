@@ -55,7 +55,8 @@ bool FBarragePrimitive::TryUpdateTransformFromJolt(FBLet Target, uint64 Time)
 				auto bID = GameSimHoldOpen->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
 				if (bID)
 				{
-					if (GameSimHoldOpen->body_interface->IsActive(*bID))
+					//atm, characters cannot be inactive.
+					if (GameSimHoldOpen->body_interface->IsActive(*bID) || Target->Me == FBShape::Character)
 					{
 						auto HoldOpen = GlobalBarrage->GameTransformPump;
 
