@@ -15,12 +15,15 @@ JPH::BodyID JOLT::FBCharacter::Create(CharacterVsCharacterCollision* CVCCollider
 			// Configure supporting volume
 			mCharacterSettings.mSupportingVolume = Plane(Vec3::sAxisY(), -mHeightStanding);
 			// Accept contacts that touch the lower sphere of the capsule
-			// Create character WITH innerbodyshape - don't try to reduce, reuse, or recycle here.
+			// If you want to create character WITH innerbodyshape - don't try to reduce, reuse, or recycle here.
 			InnerStandingShape =  RotatedTranslatedShapeSettings(
 				Vec3(0, 0.5f * mHeightStanding + mRadiusStanding, 0), Quat::sIdentity(), capsule).Create().Get();
 
-			mCharacterSettings.mInnerBodyShape = InnerStandingShape;
-			mCharacterSettings.mInnerBodyLayer = Layers::MOVING;
+			//TODO: 12/10/24
+			//uncomment this when we update jolt and inner body management is simplified.
+			//mCharacterSettings.mInnerBodyShape = InnerStandingShape;
+			//mCharacterSettings.mInnerBodyLayer = Layers::MOVING;
+
 			mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, World.Get());
 			//mCharacter->SetListener(this);
 			mCharacter->SetCharacterVsCharacterCollision(CVCColliderSystem); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
