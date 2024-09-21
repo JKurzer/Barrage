@@ -63,6 +63,8 @@ class FBCharacterBase
 {
 public:
 	virtual ~FBCharacterBase() = default;
+	
+	Ref<Shape> InnerStandingShape;
 	JPH::RVec3 mInitialPosition = JPH::RVec3::sZero();
 	float mHeightStanding = 1.35f;
 	float mRadiusStanding = 0.3f;
@@ -97,7 +99,9 @@ class FWorldSimOwner
 public:
 	//members are destructed first in, last out.
 	//https://stackoverflow.com/questions/2254263/order-of-member-constructor-and-destructor-calls
-	
+	//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
+	TSharedPtr<TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
+	TSharedPtr<TMap<FBarrageKey, TSharedPtr<FBCharacterBase>>> CharacterToJoltMapping;
 
 	const uint AllocationArenaSize = 100 * 1024 * 1024;
 	TSharedPtr<TempAllocatorImpl> Allocator;
@@ -230,9 +234,7 @@ public:
 	};
 
 public:
-	//BodyId is actually a freaking 4byte struct, so it's _worse_ potentially to have a pointer to it than just copy it.
-	TSharedPtr<TMap<FBarrageKey, BodyID>> BarrageToJoltMapping;
-	TSharedPtr<TMap<FBarrageKey, TSharedPtr<FBCharacterBase>>> CharacterToJoltMapping;
+
 	using ThreadFeed = TCircularQueue<FBPhysicsInput>;
 
 	struct FeedMap

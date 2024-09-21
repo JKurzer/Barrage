@@ -28,7 +28,7 @@ namespace JOLT
 		// If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
 		// If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
 		RegisterTypes();
-	
+
 		// We need a job system that will execute physics jobs on multiple threads. Typically
 		// you would implement the JobSystem interface yourself and let Jolt Physics run on top
 		// of your own job scheduler. JobSystemThreadPool is an example implementation.
@@ -36,11 +36,11 @@ namespace JOLT
 			new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1));
 		// Now we can create the actual physics system.
 		physics_system->Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints,
-							broad_phase_layer_interface, object_vs_broadphase_layer_filter,
-							object_vs_object_layer_filter);
+		                     broad_phase_layer_interface, object_vs_broadphase_layer_filter,
+		                     object_vs_object_layer_filter);
 
 
-		physics_system->SetBodyActivationListener( body_activation_listener.Get());
+		physics_system->SetBodyActivationListener(body_activation_listener.Get());
 
 
 		physics_system->SetContactListener(contact_listener.Get());
@@ -72,21 +72,23 @@ namespace JOLT
 		//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
 		// Create the shape
 		ShapeSettings::ShapeResult box = box_settings.Create();
-		ShapeRefC box_shape = box.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
+		ShapeRefC box_shape = box.Get();
+		// We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
 		// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
 		BodyCreationSettings box_body_settings(box_shape,
-			CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
-			Quat::sIdentity(),
-			MovementType,
-			Layer);
+		                                       CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
+		                                       Quat::sIdentity(),
+		                                       MovementType,
+		                                       Layer);
 		// Create the actual rigid body
-		Body* box_body = body_interface->CreateBody(box_body_settings); // Note that if we run out of bodies this can return nullptr
+		Body* box_body = body_interface->CreateBody(box_body_settings);
+		// Note that if we run out of bodies this can return nullptr
 
 		// Add it to the world
 		body_interface->AddBody(box_body->GetID(), EActivation::Activate);
 		BodyIDTemp = box_body->GetID();
 
-			
+
 		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
 		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
@@ -126,14 +128,14 @@ namespace JOLT
 		KeyCompose = KeyCompose << 32;
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
-	
+
 		BodyCreationSettings sphere_settings(new SphereShape(ToCreate.JoltRadius),
-												 CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
-												 Quat::sIdentity(),
-												 MovementType,
-												 Layer);
+		                                     CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
+		                                     Quat::sIdentity(),
+		                                     MovementType,
+		                                     Layer);
 		BodyIDTemp = body_interface->CreateAndAddBody(sphere_settings, EActivation::Activate);
-	
+
 		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
 		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
@@ -148,10 +150,10 @@ namespace JOLT
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 		BodyCreationSettings cap_settings(new CapsuleShape(ToCreate.JoltHalfHeightOfCylinder, ToCreate.JoltRadius),
-											 CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
-											 Quat::sIdentity(),
-											 MovementType,
-											 Layer);
+		                                  CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
+		                                  Quat::sIdentity(),
+		                                  MovementType,
+		                                  Layer);
 		BodyIDTemp = body_interface->CreateAndAddBody(cap_settings, EActivation::Activate);
 		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
@@ -161,7 +163,7 @@ namespace JOLT
 	}
 
 	FBLet FWorldSimOwner::LoadComplexStaticMesh(FBMeshParams& Definition,
-		const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey)
+	                                            const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey)
 	{
 		using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
 		using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
@@ -186,17 +188,16 @@ namespace JOLT
 			//or compound shapes which will get added back in.
 		}
 		auto& CollisionMesh = StaticMeshComponent->GetStaticMesh()->ComplexCollisionMesh;
-		if(!CollisionMesh)
+		if (!CollisionMesh)
 		{
-			
 			UE_LOG(LogTemp, Warning, TEXT("Falling back to ACTUAL MESH."));
 			CollisionMesh = StaticMeshComponent->GetStaticMesh();
 		}
-		if(!CollisionMesh)
+		if (!CollisionMesh)
 		{
 			return nullptr;
 		}
-		if(!CollisionMesh->IsCompiling() || !CollisionMesh->IsPostLoadThreadSafe())
+		if (!CollisionMesh->IsCompiling() || !CollisionMesh->IsPostLoadThreadSafe())
 		{
 			auto collbody = CollisionMesh->GetBodySetup();
 			if (collbody == nullptr)
@@ -282,7 +283,7 @@ namespace JOLT
 		auto AllocHoldOpen = Allocator;
 		auto JobHoldOpen = job_system;
 		auto PhysicsHoldOpen = physics_system;
-		if(AllocHoldOpen && JobHoldOpen)
+		if (AllocHoldOpen && JobHoldOpen)
 		{
 			PhysicsHoldOpen->Update(DeltaTime, cCollisionSteps, AllocHoldOpen.Get(), JobHoldOpen.Get());
 		}
@@ -308,37 +309,36 @@ namespace JOLT
 		//their tests use RTTI for the factory. Not sure how go about that right this sec.
 		// delete mTest;
 		//grab our hold open.		
-		auto HoldOpen =physics_system;
+		auto HoldOpen = physics_system;
 		auto& magic = physics_system->GetBodyLockInterface();
-		physics_system.Reset();							//cast it into the fire.
+		physics_system.Reset(); //cast it into the fire.
 		std::this_thread::yield(); //Cycle.
-		
-		magic.LockWrite(magic.GetAllBodiesMutexMask()); //lock it down. all write access to the physics engine passes through this.
+
+		magic.LockWrite(magic.GetAllBodiesMutexMask());
+		//lock it down. all write access to the physics engine passes through this.
 		HoldOpen.Reset();
 		magic.UnlockWrite(magic.GetAllBodiesMutexMask());
 		job_system.Reset();
 		Allocator.Reset();
 	}
+
 	bool FWorldSimOwner::UpdateCharacter(FBPhysicsInput& Update)
 	{
-
 		auto key = Update.Target.Get()->KeyIntoBarrage;
 		auto CharacterInner = BarrageToJoltMapping->Find(Update.Target.Get()->KeyIntoBarrage);
-		if(CharacterInner)
+		auto CharacterOuter = CharacterToJoltMapping->Find(key);
+		if (CharacterOuter)
 		{
-			auto CharacterOuter = CharacterToJoltMapping->Find(key);
-			if(CharacterOuter)
-			{
-				(*CharacterOuter)->IngestUpdate(Update);
-			}
+			(*CharacterOuter)->IngestUpdate(Update);
+			return true;
 		}
-
-		return true;
+		return false;
 	}
+
 	//convenience function for bulk updates.
 	bool FWorldSimOwner::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> Array)
 	{
-		for(auto& update : *Array)
+		for (auto& update : *Array)
 		{
 			UpdateCharacter(update);
 		}
