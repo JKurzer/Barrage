@@ -40,7 +40,6 @@ namespace JOLT
 					Ref<Shape> capsule = new CapsuleShape(0.5f * mHeightStanding, mRadiusStanding);
 					mCharacterSettings.mShape = RotatedTranslatedShapeSettings(
 						Vec3(0, 0.5f * mHeightStanding + mRadiusStanding, 0), Quat::sIdentity(), capsule).Create().Get();
-
 					// Configure supporting volume
 					mCharacterSettings.mSupportingVolume = Plane(Vec3::sAxisY(), -mHeightStanding);
 					// Accept contacts that touch the lower sphere of the capsule
@@ -48,6 +47,7 @@ namespace JOLT
 					mCharacter = new CharacterVirtual(&mCharacterSettings, mInitialPosition, Quat::sIdentity(), 0, World.Get());
 					//mCharacter->SetListener(this); 
 					mCharacter->SetCharacterVsCharacterCollision(CVCColliderSystem); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
+					mEffectiveVelocity = Vec3::sZero();
 					ret = mCharacter->GetInnerBodyID(); //I am going to regret this somehow.
 				}
 			}

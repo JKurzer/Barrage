@@ -73,7 +73,7 @@ public:
 	Vec3 mForcesUpdate = Vec3::sZero();
 	JPH::Quat mCapsuleRotationUpdate = JPH::Quat::sIdentity();
 	Ref<CharacterVirtual> mCharacter;
-	float mDeltaTime;
+	float mDeltaTime = 0.01; //set this yourself or have a bad time.
 
 	// Calculated effective velocity after a step
 	Vec3 mEffectiveVelocity = Vec3::sZero();
