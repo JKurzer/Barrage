@@ -14,7 +14,7 @@ public:
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
 	static inline JPH::Quat ToBarrageForce(FVector3d In)
 	{
-		return JPH::Quat(In.X/100.0, In.Z/100.0, In.Y/100.0, 0); //reverse is 0,2,1
+		return JPH::Quat(In.X/100.0, In.Z/100.0, In.Y/100.0, 1); //reverse is 0,2,1
 	};
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
 	static inline JPH::Quat ToBarrageRotation(FQuat4d In)
