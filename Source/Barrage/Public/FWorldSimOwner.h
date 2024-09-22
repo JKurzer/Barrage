@@ -311,6 +311,8 @@ public:
 	TSharedPtr<PhysicsSystem> physics_system;
 	FWorldSimOwner(float cDeltaTime);
 
+	void SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody);
+	
 	//we could use type indirection or inheritance, but the fact of the matter is that this is much easier
 	//to understand and vastly vastly faster. it's also easier to optimize out allocations, and it's very
 	//very easy to read for people who are probably already drowning in new types.

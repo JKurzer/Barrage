@@ -4,6 +4,7 @@
 #include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
 #include "FBPhysicsInput.h"
+#include "Jolt/Physics/Collision/ShapeCast.h"
 
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
@@ -82,8 +83,21 @@ void UBarrageDispatch::Deinitialize()
 	HoldOpen = nullptr;
 }
 
-void UBarrageDispatch::SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp)
+void UBarrageDispatch::SphereCast(
+	FBarrageKey ShapeSource,
+	double Radius,
+	double Distance,
+	FVector3d CastFrom,
+	FVector3d Direction,
+	uint64_t timestamp)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Firing SphereCast, Radius (%f), Distance (%f)"), Radius, Distance);
+
+	auto HoldOpen = JoltGameSim;
+	if (HoldOpen) {
+		auto bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
+		HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID);
+	}
 }
 
 //Defactoring the pointer management has actually made this much clearer than I expected.

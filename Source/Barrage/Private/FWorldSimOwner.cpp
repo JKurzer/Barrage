@@ -1,6 +1,7 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
 #include "PhysicsCharacter.h"
+#include "Jolt/Physics/Collision/ShapeCast.h"
 
 namespace JOLT
 {
@@ -57,6 +58,96 @@ namespace JOLT
 
 		// here's Andrea's transform into jolt.
 		//	https://youtu.be/jhCupKFly_M?si=umi0zvJer8NymGzX&t=438
+	}
+
+	inline void FWorldSimOwner::SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody) {
+		// Repurposed from Jolt `VehicleCollisionTester.cpp`
+		class SphereCastCollector : public JPH::CastShapeCollector
+		{
+		public:
+			SphereCastCollector(PhysicsSystem &inPhysicsSystem, const RShapeCast &inShapeCast) :
+				mPhysicsSystem(inPhysicsSystem),
+				mShapeCast(inShapeCast)
+			{
+			}
+
+			virtual void AddHit(const ShapeCastResult &inResult) override
+			{
+				// Test if this collision is closer/deeper than the previous one
+				float early_out = inResult.GetEarlyOutFraction();
+				if (early_out < GetEarlyOutFraction())
+				{
+					// Lock the body
+					BodyLockRead lock(mPhysicsSystem.GetBodyLockInterfaceNoLock(), inResult.mBodyID2);
+					JPH_ASSERT(lock.Succeeded()); // When this runs all bodies are locked so this should not fail
+					const Body *body = &lock.GetBody();
+					
+					 Vec3 normal = -inResult.mPenetrationAxis.Normalized();
+					
+					// Update early out fraction to this hit
+					UpdateEarlyOutFraction(early_out);
+
+					// Get the contact properties
+					mBody = body;
+					mSubShapeID2 = inResult.mSubShapeID2;
+					mContactPosition = mShapeCast.mCenterOfMassStart.GetTranslation() + inResult.mContactPointOn2;
+					mContactNormal = normal;
+					mFraction = inResult.mFraction;
+				}
+			}
+
+			// Configuration
+			PhysicsSystem &		mPhysicsSystem;
+			const RShapeCast &	mShapeCast;
+
+			// Resulting closest collision
+			const Body *		mBody = nullptr;
+			SubShapeID			mSubShapeID2;
+			RVec3				mContactPosition;
+			Vec3				mContactNormal;
+			float				mFraction;
+		};
+
+		const DefaultBroadPhaseLayerFilter default_broadphase_layer_filter = physics_system->GetDefaultBroadPhaseLayerFilter(Layers::MOVING);
+		const BroadPhaseLayerFilter &broadphase_layer_filter = default_broadphase_layer_filter;
+
+		const DefaultObjectLayerFilter default_object_layer_filter = physics_system->GetDefaultLayerFilter(Layers::MOVING);
+		const ObjectLayerFilter &object_layer_filter = default_object_layer_filter;
+
+		const IgnoreSingleBodyFilter default_body_filter(CastingBody);
+		const BodyFilter &body_filter = default_body_filter;
+		
+		ShapeCastSettings settings;
+		settings.mUseShrunkenShapeAndConvexRadius = true;
+		settings.mReturnDeepestPoint = true;
+	
+		JPH::SphereShape sphere(Radius);
+		sphere.SetEmbedded();
+
+		JPH::Vec3 JoltCastFrom = CoordinateUtils::ToJoltCoordinates(CastFrom);
+		JPH::Vec3 JoltDirection = CoordinateUtils::ToJoltCoordinates(Direction) * Distance;
+		
+		JPH::RShapeCast ShapeCast(
+			&sphere,
+			JPH::Vec3::sReplicate(1.0f),
+			JPH::RMat44::sTranslation(JoltCastFrom),
+			JoltDirection);
+
+		SphereCastCollector CastCollector(*(physics_system.Get()), ShapeCast);
+		physics_system->GetNarrowPhaseQueryNoLock().CastShape(
+			ShapeCast,
+			settings,
+			ShapeCast.mCenterOfMassStart.GetTranslation(),
+			CastCollector,
+			broadphase_layer_filter,
+			object_layer_filter,
+			body_filter);
+
+		if (CastCollector.mBody) {
+			UE_LOG(LogTemp, Warning, TEXT("SphereCast found a body!"));
+		} else {
+			UE_LOG(LogTemp, Warning, TEXT("SphereCast did not find anything"));
+		}
 	}
 
 	//we need the coordinate utils, but we don't really want to include them in the .h

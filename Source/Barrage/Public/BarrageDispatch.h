@@ -72,7 +72,7 @@ public:
 	virtual void Deinitialize() override;
 
 
-	virtual void SphereCast(double Radius, FVector3d CastFrom, uint64_t timestamp = 0);
+	virtual void SphereCast(FBarrageKey ShapeSource, double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
 	FBLet CreatePrimitive(FBBoxParams& Definition, ObjectKey Outkey, uint16 Layer);
 	FBLet CreatePrimitive(FBCharParams& Definition, ObjectKey Outkey, uint16 Layer);
