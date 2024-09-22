@@ -343,7 +343,7 @@ public:
 			body_interface->DestroyBody(*bID);
 		}
 	}
-
+	FBarrageKey GenerateBarrageKeyFromBodyId(BodyID& Input);
 	~FWorldSimOwner();
 	bool UpdateCharacter(FBPhysicsInput& Update);
 	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> Array);

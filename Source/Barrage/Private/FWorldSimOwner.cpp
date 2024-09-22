@@ -62,9 +62,7 @@ namespace JOLT
 	//we need the coordinate utils, but we don't really want to include them in the .h
 	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer)
 	{
-		uint64_t KeyCompose;
-		KeyCompose = PointerHash(this);
-		KeyCompose = KeyCompose << 32;
+
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 
@@ -87,21 +85,17 @@ namespace JOLT
 		// Add it to the world
 		body_interface->AddBody(box_body->GetID(), EActivation::Activate);
 		BodyIDTemp = box_body->GetID();
-
-
-		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
+		auto FBK = GenerateBarrageKeyFromBodyId(BodyIDTemp);
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
-		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
+		BarrageToJoltMapping->Add(FBK, BodyIDTemp);
 
-		return static_cast<FBarrageKey>(KeyCompose);
+		return FBK;
 	}
 
 	//we need the coordinate utils, but we don't really want to include them in the .h
 	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBCharParams& ToCreate, uint16 Layer)
 	{
-		uint64_t KeyCompose;
-		KeyCompose = PointerHash(this);
-		KeyCompose = KeyCompose << 32;
+
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 		TSharedPtr<FBCharacter> NewCharacter = MakeShareable<FBCharacter>(new FBCharacter);
@@ -113,19 +107,17 @@ namespace JOLT
 		//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
 		// Create the shape
 		BodyIDTemp = NewCharacter->Create(&this->CharacterVsCharacterCollisionSimple);
-		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
-		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
-		CharacterToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), NewCharacter);
+		auto FBK = GenerateBarrageKeyFromBodyId(BodyIDTemp);
+		BarrageToJoltMapping->Add(FBK, BodyIDTemp);
+		CharacterToJoltMapping->Add(FBK, NewCharacter);
 
-		return static_cast<FBarrageKey>(KeyCompose);
+		return FBK;
 	}
 
 	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer)
 	{
-		uint64_t KeyCompose;
-		KeyCompose = PointerHash(this);
-		KeyCompose = KeyCompose << 32;
+
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 
@@ -136,17 +128,14 @@ namespace JOLT
 		                                     Layer);
 		BodyIDTemp = body_interface->CreateAndAddBody(sphere_settings, EActivation::Activate);
 
-		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
+		auto FBK = GenerateBarrageKeyFromBodyId(BodyIDTemp);
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
-		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
-		return static_cast<FBarrageKey>(KeyCompose);
+		BarrageToJoltMapping->Add(FBK, BodyIDTemp);
+		return FBK;
 	}
 
 	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBCapParams& ToCreate, uint16 Layer)
 	{
-		uint64_t KeyCompose;
-		KeyCompose = PointerHash(this);
-		KeyCompose = KeyCompose << 32;
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 		BodyCreationSettings cap_settings(new CapsuleShape(ToCreate.JoltHalfHeightOfCylinder, ToCreate.JoltRadius),
@@ -155,11 +144,10 @@ namespace JOLT
 		                                  MovementType,
 		                                  Layer);
 		BodyIDTemp = body_interface->CreateAndAddBody(cap_settings, EActivation::Activate);
-		KeyCompose |= BodyIDTemp.GetIndexAndSequenceNumber();
+		auto FBK = GenerateBarrageKeyFromBodyId(BodyIDTemp);
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.
-		BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), BodyIDTemp);
-
-		return static_cast<FBarrageKey>(KeyCompose);
+		BarrageToJoltMapping->Add(FBK, BodyIDTemp);
+		return FBK;
 	}
 
 	FBLet FWorldSimOwner::LoadComplexStaticMesh(FBMeshParams& Definition,
@@ -263,11 +251,9 @@ namespace JOLT
 			creation_settings.SetShape(shape);
 			auto bID = body_interface->CreateAndAddBody(creation_settings, EActivation::Activate);
 
-			uint64_t KeyCompose = PointerHash(this);
-			KeyCompose = KeyCompose << 32;
-			KeyCompose |= bID.GetIndexAndSequenceNumber();
-			BarrageToJoltMapping->Add(static_cast<FBarrageKey>(KeyCompose), bID);
-			FBLet shared = MakeShareable(new FBarragePrimitive(static_cast<FBarrageKey>(KeyCompose), Outkey));
+			auto FBK = GenerateBarrageKeyFromBodyId(bID);
+			BarrageToJoltMapping->Add(FBK, bID);
+			FBLet shared = MakeShareable(new FBarragePrimitive(FBK, Outkey));
 
 			return shared;
 		}
@@ -296,6 +282,15 @@ namespace JOLT
 		// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
 		auto HoldOpen = physics_system;
 		HoldOpen->OptimizeBroadPhase();
+	}
+
+	FBarrageKey FWorldSimOwner::GenerateBarrageKeyFromBodyId(BodyID& Input)
+	{
+		uint64_t KeyCompose;
+		KeyCompose = PointerHash(this);
+		KeyCompose = KeyCompose << 32;
+		KeyCompose |= Input.GetIndexAndSequenceNumber();
+		return static_cast<FBarrageKey>(KeyCompose);
 	}
 
 	FWorldSimOwner::~FWorldSimOwner()
