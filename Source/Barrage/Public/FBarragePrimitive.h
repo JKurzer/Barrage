@@ -85,6 +85,9 @@ public:
 		{
 			return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
 		};
+
+		// If you call this with a non-character FBLet, it will always return false.
+		static bool IsCharacterOnGround(FBLet Target);
 protected:
 	static inline UBarrageDispatch* GlobalBarrage = nullptr;
 };
