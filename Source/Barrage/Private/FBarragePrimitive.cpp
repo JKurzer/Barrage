@@ -185,3 +185,37 @@ void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 		}
 	}
 }
+
+bool FBarragePrimitive::IsCharacterOnGround(FBLet Target)
+{
+	if (IsNotNull(Target))
+	{
+		if (GlobalBarrage)
+		{
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim
+				&& IsNotNull(Target)
+				&& MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			{
+				auto bID = HoldOpenGameSim->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+				if (bID && Target->Me != FBShape::Character)
+				{
+					return false;
+				}
+				if (bID && Target->Me == FBShape::Character)
+				{
+					auto CharacterActual = HoldOpenGameSim->CharacterToJoltMapping->Find(Target->KeyIntoBarrage);
+					if (CharacterActual && *CharacterActual)
+					{
+						auto CharVirtual = CharacterActual->Get()->mCharacter;
+						return CharVirtual->IsSupported();
+					}
+					return false;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
