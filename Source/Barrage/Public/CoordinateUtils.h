@@ -39,9 +39,13 @@ public:
 	
 	
 	static inline FVector3f FromJoltCoordinates(JPH::Vec3 In)
-{
+	{
 		return FVector3f(In[0]*100.0, In[2]*100.0, In[1]*100.0); // this looks _wrong_.
-}
+	}
+	static inline FVector3f FromJoltVector(JPH::Vec3 In)
+	{
+		return FVector3f(In[0], In[2], In[1]); // this looks _wrong_.
+	}
 	static inline JPH::Quat ToJoltRotation(FQuat4d In)
 	{
 		return JPH::Quat(-In.X, -In.Z, -In.Y, In.W);

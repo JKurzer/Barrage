@@ -219,3 +219,35 @@ bool FBarragePrimitive::IsCharacterOnGround(FBLet Target)
 	return false;
 }
 
+FVector3f FBarragePrimitive::GetCharacterGroundNormal(FBLet Target)
+{
+	if (IsNotNull(Target))
+	{
+		if (GlobalBarrage)
+		{
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim
+				&& IsNotNull(Target)
+				&& MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			{
+				auto bID = HoldOpenGameSim->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+				if (bID && Target->Me != FBShape::Character)
+				{
+					return FVector3f::ZeroVector;
+				}
+				if (bID && Target->Me == FBShape::Character)
+				{
+					auto CharacterActual = HoldOpenGameSim->CharacterToJoltMapping->Find(Target->KeyIntoBarrage);
+					if (CharacterActual && *CharacterActual)
+					{
+						auto CharVirtual = CharacterActual->Get()->mCharacter;
+						return CoordinateUtils::FromJoltVector(CharVirtual->GetGroundNormal());
+					}
+					return FVector3f::ZeroVector;
+				}
+			}
+		}
+	}
+
+	return FVector3f::ZeroVector;
+}
