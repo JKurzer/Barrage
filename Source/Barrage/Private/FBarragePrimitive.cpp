@@ -208,7 +208,7 @@ bool FBarragePrimitive::IsCharacterOnGround(FBLet Target)
 					if (CharacterActual && *CharacterActual)
 					{
 						auto CharVirtual = CharacterActual->Get()->mCharacter;
-						return CharVirtual->IsSupported();
+						return CharVirtual->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 					}
 					return false;
 				}
