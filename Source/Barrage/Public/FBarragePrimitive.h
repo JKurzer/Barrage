@@ -28,7 +28,7 @@ public:
 	//This breaks our type dependency by using the underlying hashkey instead of the artillery type.
 	//this is pretty risky, but it's basically necessary to avoid a dependency on artillery until we factor our types
 	//into a type plugin, which is a wild but not unexpected thing to do.
-	ObjectKey KeyOutOfBarrage;
+	FSkeletonKey KeyOutOfBarrage;
 
 	//Tombstone state. Used to ensure that we don't nullity sliced. 
 	//0 is normal.
@@ -41,7 +41,7 @@ public:
 	uint32 tombstone; //4b 
 	FBShape Me; //4b
 
-	FBarragePrimitive(FBarrageKey Into, ObjectKey OutOf)
+	FBarragePrimitive(FBarrageKey Into, FSkeletonKey OutOf)
 	{
 		KeyIntoBarrage = Into;
 		KeyOutOfBarrage = OutOf;

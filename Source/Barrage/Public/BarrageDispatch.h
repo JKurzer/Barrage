@@ -74,13 +74,13 @@ public:
 
 	virtual void SphereCast(FBarrageKey ShapeSource, double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
-	FBLet CreatePrimitive(FBBoxParams& Definition, ObjectKey Outkey, uint16 Layer);
-	FBLet CreatePrimitive(FBCharParams& Definition, ObjectKey Outkey, uint16 Layer);
-	FBLet CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16 Layer);
-	FBLet CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer);
-	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey);
+	FBLet CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Outkey, uint16 Layer);
+	FBLet CreatePrimitive(FBCharParams& Definition, FSkeletonKey Outkey, uint16 Layer);
+	FBLet CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16 Layer);
+	FBLet CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer);
+	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey);
 	FBLet GetShapeRef(FBarrageKey Existing) const;
-	FBLet GetShapeRef(ObjectKey Existing) const;
+	FBLet GetShapeRef(FSkeletonKey Existing) const;
 	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
 
 	//any non-zero value is the same, effectively, as a nullity for the purposes of any new operation.
@@ -118,8 +118,8 @@ protected:
 private:
 	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleMapping;
 	
-	TSharedPtr<TMap<ObjectKey, FBarrageKey>> TranslationMapping;
-	FBLet ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
+	TSharedPtr<TMap<FSkeletonKey, FBarrageKey>> TranslationMapping;
+	FBLet ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
 

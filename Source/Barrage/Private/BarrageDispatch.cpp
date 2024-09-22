@@ -54,7 +54,7 @@ void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 	//TODO: investigate this thoroughly for perf.
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
 	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
-	TranslationMapping = MakeShareable(new TMap<ObjectKey, FBarrageKey>());
+	TranslationMapping = MakeShareable(new TMap<FSkeletonKey, FBarrageKey>());
 }
 
 void UBarrageDispatch::Deinitialize()
@@ -105,7 +105,7 @@ void UBarrageDispatch::SphereCast(
 //this is because over time, the needs of these classes may diverge and multiply
 //and it's not clear to me that Shapefulness is going to actually be the defining shared
 //feature. I'm going to wait to refactor the types until testing is complete.
-FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKey, uint16_t Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
@@ -117,7 +117,7 @@ FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, ObjectKey OutKe
 }
 
 //TODO: COMPLETE MOCK
-FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, ObjectKey OutKey, uint16_t Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
@@ -128,7 +128,7 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, ObjectKey OutK
 	return FBLet();
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey OutKey, uint16_t Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
@@ -139,7 +139,7 @@ FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, ObjectKey Ou
 	return FBLet();
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, ObjectKey OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
@@ -150,7 +150,7 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, ObjectKey OutKe
 	return FBLet();
 }
 
-FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
+FBLet UBarrageDispatch::ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
 {
 	//interestingly, you can't use auto here. don't try. it'll allocate a raw pointer internal
 	//and that will get stored in the jolt body lifecycle mapping.
@@ -166,7 +166,7 @@ FBLet UBarrageDispatch::ManagePointers(ObjectKey OutKey, FBarrageKey temp, FBarr
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
-                                              const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey)
+                                              const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
@@ -198,7 +198,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	return JoltBodyLifecycleMapping->FindRef(Existing);
 }
 
-FBLet UBarrageDispatch::GetShapeRef(ObjectKey Existing) const
+FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 {
 	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
 	//if entomb gets sliced, the tombstone check will fail as long as it is performed within 27 milliseconds of this call.

@@ -324,7 +324,7 @@ public:
 
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition,
 		const UStaticMeshComponent* StaticMeshComponent,
-		ObjectKey Outkey);
+		FSkeletonKey Outkey);
 
 	//This'll be trouble.
 	//https://www.youtube.com/watch?v=KKC3VePrBOY&lc=Ugw9YRxHjcywQKH5LO54AaABAg

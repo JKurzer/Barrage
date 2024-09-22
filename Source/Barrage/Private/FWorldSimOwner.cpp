@@ -242,7 +242,7 @@ namespace JOLT
 	}
 
 	FBLet FWorldSimOwner::LoadComplexStaticMesh(FBMeshParams& Definition,
-	                                            const UStaticMeshComponent* StaticMeshComponent, ObjectKey Outkey)
+	                                            const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey)
 	{
 		using ParticlesType = Chaos::TParticles<Chaos::FRealSingle, 3>;
 		using ParticleVecType = Chaos::TVec3<Chaos::FRealSingle>;
