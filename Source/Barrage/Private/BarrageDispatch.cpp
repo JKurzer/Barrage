@@ -98,10 +98,6 @@ FBLet* UBarrageDispatch::SphereCast(
 		auto bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
 		FBarrageKey HitBarrageKey = HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID);
 		return JoltBodyLifecycleMapping->Find(HitBarrageKey);
-		// if (HitFiblet) {
-		// 	return 
-		// 	UE_LOG(LogTemp, Warning, TEXT("Hit a fiblet!"));
-		// }
 	}
 	return nullptr;
 }
