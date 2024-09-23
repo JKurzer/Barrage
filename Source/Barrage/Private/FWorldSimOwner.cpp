@@ -1,6 +1,7 @@
 ﻿#include "FWorldSimOwner.h"
 #include "CoordinateUtils.h"
 #include "PhysicsCharacter.h"
+#include "CastShapeCollectors/SphereCastCollector.h"
 #include "Jolt/Physics/Collision/ShapeCast.h"
 
 namespace JOLT
@@ -60,54 +61,7 @@ namespace JOLT
 		//	https://youtu.be/jhCupKFly_M?si=umi0zvJer8NymGzX&t=438
 	}
 
-	inline void FWorldSimOwner::SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody) {
-		// Repurposed from Jolt `VehicleCollisionTester.cpp`
-		class SphereCastCollector : public JPH::CastShapeCollector
-		{
-		public:
-			SphereCastCollector(PhysicsSystem &inPhysicsSystem, const RShapeCast &inShapeCast) :
-				mPhysicsSystem(inPhysicsSystem),
-				mShapeCast(inShapeCast)
-			{
-			}
-
-			virtual void AddHit(const ShapeCastResult &inResult) override
-			{
-				// Test if this collision is closer/deeper than the previous one
-				float early_out = inResult.GetEarlyOutFraction();
-				if (early_out < GetEarlyOutFraction())
-				{
-					// Lock the body
-					BodyLockRead lock(mPhysicsSystem.GetBodyLockInterfaceNoLock(), inResult.mBodyID2);
-					JPH_ASSERT(lock.Succeeded()); // When this runs all bodies are locked so this should not fail
-					const Body *body = &lock.GetBody();
-					
-					 Vec3 normal = -inResult.mPenetrationAxis.Normalized();
-					
-					// Update early out fraction to this hit
-					UpdateEarlyOutFraction(early_out);
-
-					// Get the contact properties
-					mBody = body;
-					mSubShapeID2 = inResult.mSubShapeID2;
-					mContactPosition = mShapeCast.mCenterOfMassStart.GetTranslation() + inResult.mContactPointOn2;
-					mContactNormal = normal;
-					mFraction = inResult.mFraction;
-				}
-			}
-
-			// Configuration
-			PhysicsSystem &		mPhysicsSystem;
-			const RShapeCast &	mShapeCast;
-
-			// Resulting closest collision
-			const Body *		mBody = nullptr;
-			SubShapeID			mSubShapeID2;
-			RVec3				mContactPosition;
-			Vec3				mContactNormal;
-			float				mFraction;
-		};
-
+	inline FBarrageKey FWorldSimOwner::SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody) {
 		const DefaultBroadPhaseLayerFilter default_broadphase_layer_filter = physics_system->GetDefaultBroadPhaseLayerFilter(Layers::MOVING);
 		const BroadPhaseLayerFilter &broadphase_layer_filter = default_broadphase_layer_filter;
 
@@ -145,9 +99,11 @@ namespace JOLT
 
 		if (CastCollector.mBody) {
 			UE_LOG(LogTemp, Warning, TEXT("SphereCast found a body!"));
+			return GenerateBarrageKeyFromBodyId(CastCollector.mBody->GetID());
 		} else {
 			UE_LOG(LogTemp, Warning, TEXT("SphereCast did not find anything"));
 		}
+		return FBarrageKey(0);
 	}
 
 	//we need the coordinate utils, but we don't really want to include them in the .h
@@ -375,7 +331,7 @@ namespace JOLT
 		HoldOpen->OptimizeBroadPhase();
 	}
 
-	FBarrageKey FWorldSimOwner::GenerateBarrageKeyFromBodyId(BodyID& Input)
+	FBarrageKey FWorldSimOwner::GenerateBarrageKeyFromBodyId(const BodyID& Input) const
 	{
 		uint64_t KeyCompose;
 		KeyCompose = PointerHash(this);
