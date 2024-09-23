@@ -83,7 +83,7 @@ void UBarrageDispatch::Deinitialize()
 	HoldOpen = nullptr;
 }
 
-void UBarrageDispatch::SphereCast(
+FBLet* UBarrageDispatch::SphereCast(
 	FBarrageKey ShapeSource,
 	double Radius,
 	double Distance,
@@ -96,8 +96,14 @@ void UBarrageDispatch::SphereCast(
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen) {
 		auto bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
-		HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID);
+		FBarrageKey HitBarrageKey = HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID);
+		return JoltBodyLifecycleMapping->Find(HitBarrageKey);
+		// if (HitFiblet) {
+		// 	return 
+		// 	UE_LOG(LogTemp, Warning, TEXT("Hit a fiblet!"));
+		// }
 	}
+	return nullptr;
 }
 
 //Defactoring the pointer management has actually made this much clearer than I expected.
