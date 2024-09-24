@@ -314,6 +314,13 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 				{
 					x.Value->StepCharacter();
 				}
+				else if (x.Value->mCharacter)
+				{
+					x.Value->mCharacter->SetLinearVelocity(x.Value->World->GetGravity());
+					x.Value->mCharacter->SetPosition(x.Value->mInitialPosition);
+					x.Value->mForcesUpdate = x.Value->World->GetGravity();
+					x.Value->StepCharacter();
+				}
 			}
 		}
 		//maintain tombstones

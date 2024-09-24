@@ -74,7 +74,7 @@ public:
 	Vec3 mVelocityUpdate = Vec3::sZero();
 	Vec3 mForcesUpdate = Vec3::sZero();
 	JPH::Quat mCapsuleRotationUpdate = JPH::Quat::sIdentity();
-	Ref<CharacterVirtual> mCharacter;
+	Ref<CharacterVirtual> mCharacter = Ref<CharacterVirtual>();
 	float mDeltaTime = 0.01; //set this yourself or have a bad time.
 
 	// Calculated effective velocity after a step
@@ -82,10 +82,10 @@ public:
 	virtual void IngestUpdate(FBPhysicsInput& input) = 0;
 	virtual void StepCharacter() = 0;
 	
+	TSharedPtr<JPH::PhysicsSystem, ESPMode::ThreadSafe> World;
 protected:
 	friend class FWorldSimOwner;
 	TWeakPtr<FWorldSimOwner> Machine;
-	TSharedPtr<JPH::PhysicsSystem, ESPMode::ThreadSafe> World;
 };
 
 class FWorldSimOwner

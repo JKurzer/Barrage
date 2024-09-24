@@ -150,8 +150,13 @@ namespace JOLT
 		NewCharacter->mHeightStanding = 2 * ToCreate.JoltHalfHeightOfCylinder;
 		NewCharacter->mRadiusStanding = ToCreate.JoltRadius;
 		NewCharacter->mInitialPosition = CoordinateUtils::ToJoltCoordinates(ToCreate.point);
+		if(NewCharacter->mInitialPosition.IsNearZero() || NewCharacter->mInitialPosition.IsNaN())
+		{
+			NewCharacter->mInitialPosition = Vec3::sZero();
+		}
 		NewCharacter->World = this->physics_system;
 		NewCharacter->mDeltaTime = DeltaTime;
+		NewCharacter->mForcesUpdate = Vec3::sZero();
 		//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
 		// Create the shape
 		BodyIDTemp = NewCharacter->Create(&this->CharacterVsCharacterCollisionSimple);

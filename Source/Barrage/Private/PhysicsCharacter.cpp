@@ -9,15 +9,18 @@ JPH::BodyID JOLT::FBCharacter::Create(CharacterVsCharacterCollision* CVCCollider
 		//WorldSimOwner manages the lifecycle of the physics characters. we don't have a proper destructor in here yet, I'm just trying to get this UP for now.
 		if(World)
 		{
+			mCharacterSettings.mMass = 1000;
 			Ref<Shape> capsule = new CapsuleShape(0.5f * mHeightStanding, mRadiusStanding);
+			Ref<Shape> capsuleB = new CapsuleShape(0.5f * mHeightStanding, mRadiusStanding);
 			mCharacterSettings.mShape = RotatedTranslatedShapeSettings(
 				Vec3(0, 0.5f * mHeightStanding + mRadiusStanding, 0), Quat::sIdentity(), capsule).Create().Get();
 			// Configure supporting volume
 			mCharacterSettings.mSupportingVolume = Plane(Vec3::sAxisY(), -mHeightStanding);
+			mForcesUpdate = Vec3::sZero();
 			// Accept contacts that touch the lower sphere of the capsule
 			// If you want to create character WITH innerbodyshape - don't try to reduce, reuse, or recycle here.
 			InnerStandingShape =  RotatedTranslatedShapeSettings(
-				Vec3(0, 0.5f * mHeightStanding + mRadiusStanding, 0), Quat::sIdentity(), capsule).Create().Get();
+				Vec3(0, 0.5f * mHeightStanding + mRadiusStanding, 0), Quat::sIdentity(), capsuleB).Create().Get();
 
 			//TODO: 12/10/24
 			//uncomment this when we update jolt and inner body management is simplified.
@@ -28,7 +31,7 @@ JPH::BodyID JOLT::FBCharacter::Create(CharacterVsCharacterCollision* CVCCollider
 			//mCharacter->SetListener(this);
 			mCharacter->SetCharacterVsCharacterCollision(CVCColliderSystem); // see https://github.com/jrouwe/JoltPhysics/blob/e3ed3b1d33f3a0e7195fbac8b45b30f0a5c8a55b/UnitTests/Physics/CharacterVirtualTests.cpp#L759
 			mEffectiveVelocity = Vec3::sZero();
-			ret = mCharacter->GetInnerBodyID(); //I am going to regret this somehow.
+			ret = mCharacter->GetInnerBodyID(); //I am going to regret this somehow. Update: I did.
 		}
 	}
 	return ret;
@@ -88,7 +91,7 @@ void JOLT::FBCharacter::StepCharacter()
 	                           mUpdateSettings,
 	                           World->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
 	                           World->GetDefaultLayerFilter(Layers::MOVING),
-	                           {},
+	                           IgnoreSingleBodyFilter(mCharacter->GetInnerBodyID()),
 	                           {},
 	                           allocator);
 
