@@ -19,7 +19,7 @@ public:
 	{
 		TObjectPtr<AActor> Pin;
 		Pin = MySelf.Get();
-		if(Pin)
+		if(Pin && !Loc.ContainsNaN())
 		{
 			Pin->SetActorLocationAndRotation(Loc, Rot);
 		}
@@ -29,7 +29,7 @@ public:
 	{
 		TObjectPtr<AActor> Pin;
 		Pin = MySelf.Get();
-		if(Pin)
+		if(Pin && !Location.ContainsNaN())
 		{
 			Pin->SetActorLocation(Location, false, nullptr, ETeleportType::None);
 		}
@@ -39,7 +39,7 @@ public:
 	{
 		TObjectPtr<AActor> Pin;
 		Pin = MySelf.Get();
-		if(Pin)
+		if(Pin && !Rotation.ContainsNaN())
 		{
 			Pin->SetActorRotation(Rotation, ETeleportType::None);
 		}

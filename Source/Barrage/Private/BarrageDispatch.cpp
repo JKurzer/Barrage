@@ -42,19 +42,20 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:TransformUpdateQueue: Online"));
 	GameTransformPump = MakeShareable(new TransformUpdatesForGameThread(20024));
 	FBarragePrimitive::GlobalBarrage = this;
-	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
-}
-
-void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
-{
-	Super::OnWorldBeginPlay(InWorld);
-
 	//this approach may actually be too slow. it is pleasingly lockless, but it allocs 16megs
 	//and just iterating through that could be Rough for the gamethread.
 	//TODO: investigate this thoroughly for perf.
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
 	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
 	TranslationMapping = MakeShareable(new TMap<FSkeletonKey, FBarrageKey>());
+	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
+}
+
+void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
+{
+
+	Super::OnWorldBeginPlay(InWorld);
+
 }
 
 void UBarrageDispatch::Deinitialize()
@@ -309,7 +310,10 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		{
 			for(auto x : *HoldOpenCharacters)
 			{
-				x.Value->StepCharacter();
+				if(x.Value->mCharacter && !x.Value->mCharacter->GetPosition().IsNaN())
+				{
+					x.Value->StepCharacter();
+				}
 			}
 		}
 		//maintain tombstones
