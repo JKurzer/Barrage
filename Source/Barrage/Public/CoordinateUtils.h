@@ -11,6 +11,12 @@ public:
 		return JPH::Vec3(In.X/100.0, In.Z/100.0, In.Y/100.0); //reverse is 0,2,1
 	};
 
+	static inline JPH::Vec3 ToJoltCoordinates(double InX, double InY, double InZ)
+	{
+		return JPH::Vec3(InX/100.0, InZ/100.0, InY/100.0); //reverse is 0,2,1
+	};
+
+	
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
 	static inline JPH::Quat ToBarrageForce(FVector3d In)
 	{

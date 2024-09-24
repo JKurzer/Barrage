@@ -43,14 +43,18 @@
 
 //REMINDER: these use UE type conventions and so are in UE space.
 //I bounced back and forth on this a bunch.
+
 class FBBoxParams
 {
 public:
 	FVector3d point;
-
+	double euler_angle;
 	double JoltX;
 	double JoltY;
 	double JoltZ;
+	double OffsetX;
+	double OffsetY;
+	double OffsetZ;
 };
 
 class FBSphereParams

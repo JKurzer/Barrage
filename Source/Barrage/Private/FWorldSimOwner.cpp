@@ -113,10 +113,11 @@ namespace JOLT
 		BodyID BodyIDTemp = BodyID();
 		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
 
-		BoxShapeSettings box_settings(Vec3(ToCreate.JoltX, ToCreate.JoltY, ToCreate.JoltZ));
+		Ref<Shape> box_settings = new BoxShape(Vec3(ToCreate.JoltX, ToCreate.JoltY, ToCreate.JoltZ));
 		//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
 		// Create the shape
-		ShapeSettings::ShapeResult box = box_settings.Create();
+		ShapeSettings::ShapeResult box = RotatedTranslatedShapeSettings(
+			 	 CoordinateUtils::ToJoltCoordinates(ToCreate.OffsetX, ToCreate.OffsetY, ToCreate.OffsetZ), Quat::sIdentity(), box_settings).Create();
 		ShapeRefC box_shape = box.Get();
 		// We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
 		// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.

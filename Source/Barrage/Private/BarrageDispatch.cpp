@@ -335,10 +335,14 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to semantic changes. the Point is left in the UE space. 
 FBBoxParams FBarrageBounder::GenerateBoxBounds(FVector3d point, double xDiam,
-                                               double yDiam, double zDiam)
+                                               double yDiam, double zDiam, FVector3d OffsetCenterToMatchBoundedShape)
 {
 	FBBoxParams blob;
 	blob.point = point;
+	blob.euler_angle = 0;
+	blob.OffsetX = OffsetCenterToMatchBoundedShape.X;
+	blob.OffsetY = OffsetCenterToMatchBoundedShape.Y;
+	blob.OffsetZ = OffsetCenterToMatchBoundedShape.Z;
 	blob.JoltX = CoordinateUtils::DiamToJoltHalfExtent(xDiam);
 	blob.JoltY = CoordinateUtils::DiamToJoltHalfExtent(zDiam); //this isn't a typo.
 	blob.JoltZ = CoordinateUtils::DiamToJoltHalfExtent(yDiam);
