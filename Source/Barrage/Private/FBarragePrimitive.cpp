@@ -186,6 +186,39 @@ void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 	}
 }
 
+void FBarragePrimitive::SpeedLimit(FBLet Target, float TargetSpeed)
+{
+	if (IsNotNull(Target))
+	{
+		if (GlobalBarrage)
+		{
+			auto GameSimHoldOpen = GlobalBarrage->JoltGameSim;
+			if (GameSimHoldOpen)
+			{
+				auto bID = GameSimHoldOpen->BarrageToJoltMapping->Find(Target->KeyIntoBarrage);
+				if (bID)
+				{
+					if (GameSimHoldOpen->body_interface->IsActive(*bID) || Target->Me == Character)
+					{
+						if(Target->Me == Character)
+						{
+							auto CharacterActual = GameSimHoldOpen->CharacterToJoltMapping->Find(Target->KeyIntoBarrage);
+							if (CharacterActual && *CharacterActual)
+							{
+								auto CharVirtual = CharacterActual->Get()->mMaxSpeed = TargetSpeed;
+							}
+						}
+						else
+						{
+							//TODO: allow non-character speedlimits?
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 bool FBarragePrimitive::IsCharacterOnGround(FBLet Target)
 {
 	if (IsNotNull(Target))

@@ -31,7 +31,7 @@ public:
 	static FBBoxParams GenerateBoxBounds(FVector3d point , double xDiam, double yDiam, double zDiam, FVector3d OffsetCenterToMatchBoundedShape = FVector::Zero());
 	static FBSphereParams GenerateSphereBounds(FVector3d point, double radius);
 	static FBCapParams GenerateCapsuleBounds(UE::Geometry::FCapsule3d Capsule);
-	static FBCharParams GenerateCharacterBounds(FVector3d point, double radius, double extent, double taper);
+	static FBCharParams GenerateCharacterBounds(FVector3d point, double radius, double extent, double speed);
 };
 
 namespace JOLT

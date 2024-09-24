@@ -67,6 +67,7 @@ public:
 	Ref<Shape> InnerStandingShape;
 	JPH::RVec3 mInitialPosition = JPH::RVec3::sZero();
 	float mHeightStanding = 1.35f;
+	float mMaxSpeed = 900.0f;
 	float mRadiusStanding = 0.3f;
 	JPH::CharacterVirtualSettings mCharacterSettings;
 	CharacterVirtual::ExtendedUpdateSettings mUpdateSettings;

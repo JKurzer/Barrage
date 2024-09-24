@@ -78,9 +78,11 @@ void JOLT::FBCharacter::StepCharacter()
 	// Player input
 	//todo: I think this is wrong now.
 	new_velocity += mVelocityUpdate;
-
+	// this doesn't actually keep you exactly to the max speed, instead it just keeps you to a ratio of max speed in each component.
+	auto clamped = (new_velocity.Normalized() * mMaxSpeed).Abs(); 
+	clamped = clamped.sClamp(new_velocity, -clamped, clamped);
 	// Update character velocity
-	mCharacter->SetLinearVelocity(new_velocity);
+	mCharacter->SetLinearVelocity(clamped);
 
 	RVec3 start_pos = GetPosition();
 

@@ -383,12 +383,12 @@ FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Caps
 
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to change. the Point is left in the UE space, signified by the UE type. 
-FBCharParams FBarrageBounder::GenerateCharacterBounds(FVector3d point, double radius, double extent, double taper)
+FBCharParams FBarrageBounder::GenerateCharacterBounds(FVector3d point, double radius, double extent, double speed)
 {
 	FBCharParams blob;
 	blob.point = point;
 	blob.JoltRadius = CoordinateUtils::RadiusToJolt(radius);
 	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(extent);
-	blob.taper = taper;
+	blob.speed = speed;
 	return blob;
 }

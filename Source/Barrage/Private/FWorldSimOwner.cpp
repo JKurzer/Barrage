@@ -150,6 +150,7 @@ namespace JOLT
 		NewCharacter->mHeightStanding = 2 * ToCreate.JoltHalfHeightOfCylinder;
 		NewCharacter->mRadiusStanding = ToCreate.JoltRadius;
 		NewCharacter->mInitialPosition = CoordinateUtils::ToJoltCoordinates(ToCreate.point);
+		NewCharacter->mMaxSpeed = ToCreate.speed;
 		if(NewCharacter->mInitialPosition.IsNearZero() || NewCharacter->mInitialPosition.IsNaN())
 		{
 			NewCharacter->mInitialPosition = Vec3::sZero();

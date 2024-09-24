@@ -86,6 +86,8 @@ public:
 			return Target != nullptr && Target.IsValid() && Target->tombstone == 0;
 		};
 
+	static inline void SpeedLimit(FBLet Target, float TargetSpeed);;
+	
 		// If you call these with a non-character FBLet, they will always return false.
 		static bool IsCharacterOnGround(FBLet Target);
 		static FVector3f GetCharacterGroundNormal(FBLet Target);

@@ -87,7 +87,7 @@ public:
 	FVector3d point;
 	double JoltHalfHeightOfCylinder;
 	double JoltRadius;
-	double taper;
+	double speed;
 };
 //this should evaluate in most IDEs, allowing you to see the size if you need to make changes. try not to need to.
 //constexpr const static int size = sizeof(FBShapeParams);
