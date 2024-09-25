@@ -84,27 +84,20 @@ void UBarrageDispatch::Deinitialize()
 	HoldOpen = nullptr;
 }
 
-FBLet* UBarrageDispatch::SphereCast(
+void UBarrageDispatch::SphereCast(
 	FBarrageKey ShapeSource,
 	double Radius,
 	double Distance,
 	FVector3d CastFrom,
 	FVector3d Direction,
+	TSharedPtr<FHitResult> OutHit,
 	uint64_t timestamp)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Firing SphereCast, Radius (%f), Distance (%f)"), Radius, Distance);
-
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen) {
 		auto bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
-		FBarrageKey HitBarrageKey = HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID);
-		return JoltBodyLifecycleMapping->Find(HitBarrageKey);
-		// if (HitFiblet) {
-		// 	return 
-		// 	UE_LOG(LogTemp, Warning, TEXT("Hit a fiblet!"));
-		// }
+		HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID, OutHit);
 	}
-	return nullptr;
 }
 
 //Defactoring the pointer management has actually made this much clearer than I expected.
@@ -342,6 +335,15 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 	}
 }
 
+FBarrageKey UBarrageDispatch::GenerateBarrageKeyFromBodyId(const JPH::BodyID& Input) const
+{
+	return JoltGameSim->GenerateBarrageKeyFromBodyId(Input);
+};
+
+FBarrageKey UBarrageDispatch::GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const
+{
+	return JoltGameSim->GenerateBarrageKeyFromBodyId(RawIndexAndSequenceNumberInput);
+};
 
 //Bounds are OPAQUE. do not reference them. they are protected for a reason, because they are
 //subject to semantic changes. the Point is left in the UE space. 
