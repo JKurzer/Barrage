@@ -72,7 +72,7 @@ public:
 	virtual void Deinitialize() override;
 
 
-	virtual FBLet* SphereCast(FBarrageKey ShapeSource, double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, uint64_t timestamp = 0);
+	virtual void SphereCast(FBarrageKey ShapeSource, double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, TSharedPtr<FHitResult> OutHit, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
 	FBLet CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Outkey, uint16 Layer);
 	FBLet CreatePrimitive(FBCharParams& Definition, FSkeletonKey Outkey, uint16 Layer);
@@ -113,6 +113,9 @@ public:
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
 	void StepWorld(uint64 Time);
 
+	FBarrageKey GenerateBarrageKeyFromBodyId(const JPH::BodyID& Input) const;
+	FBarrageKey GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const;
+	
 protected:
 
 private:

@@ -8,14 +8,12 @@
 #include "BarrageDispatch.h"
 #include "Containers/CircularQueue.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
-#include "CoordinateUtils.h"
 #include "FBShapeParams.h"
 #include "FBarrageKey.h"
 #include "FBPhysicsInput.h"
 
 #include "SkeletonTypes.h"
 #include "IsolatedJoltIncludes.h"
-#include "PhysicsEngine/BodySetup.h"
 
 // All Jolt symbols are in the JPH namespace
 
@@ -312,7 +310,7 @@ public:
 	TSharedPtr<PhysicsSystem> physics_system;
 	FWorldSimOwner(float cDeltaTime);
 
-	FBarrageKey SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody);
+	void SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody, TSharedPtr<FHitResult> OutHit) const;
 	
 	//we could use type indirection or inheritance, but the fact of the matter is that this is much easier
 	//to understand and vastly vastly faster. it's also easier to optimize out allocations, and it's very
@@ -347,6 +345,7 @@ public:
 		}
 	}
 	FBarrageKey GenerateBarrageKeyFromBodyId(const BodyID& Input) const;
+	FBarrageKey GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const;
 	~FWorldSimOwner();
 	bool UpdateCharacter(FBPhysicsInput& Update);
 	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> Array);

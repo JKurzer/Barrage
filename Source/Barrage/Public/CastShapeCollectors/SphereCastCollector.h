@@ -36,7 +36,7 @@ public:
 	}
 
 	// Configuration
-	JPH::PhysicsSystem &		mPhysicsSystem;
+	JPH::PhysicsSystem &	mPhysicsSystem;
 	const JPH::RShapeCast &	mShapeCast;
 
 	// Resulting closest collision

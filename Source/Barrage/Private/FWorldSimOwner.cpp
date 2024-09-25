@@ -3,6 +3,7 @@
 #include "PhysicsCharacter.h"
 #include "CastShapeCollectors/SphereCastCollector.h"
 #include "Jolt/Physics/Collision/ShapeCast.h"
+#include "PhysicsEngine/BodySetup.h"
 
 namespace JOLT
 {
@@ -61,7 +62,21 @@ namespace JOLT
 		//	https://youtu.be/jhCupKFly_M?si=umi0zvJer8NymGzX&t=438
 	}
 
-	inline FBarrageKey FWorldSimOwner::SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody) {
+	inline void FWorldSimOwner::SphereCast(
+		double Radius,
+		double Distance,
+		FVector3d CastFrom,
+		FVector3d Direction,
+		JPH::BodyID& CastingBody,
+		TSharedPtr<FHitResult>
+		OutHit) const
+	{
+		OutHit->Init();
+		// In order to denote whether we actually hit anything, we'll munge Jolt's uint32 BodyID values into
+		// the int32 of `FHitResult::MyItem`. This should be fine.
+		OutHit->MyItem = JPH::BodyID::cInvalidBodyID;
+
+		// Set up shape cast settings
 		const DefaultBroadPhaseLayerFilter default_broadphase_layer_filter = physics_system->GetDefaultBroadPhaseLayerFilter(Layers::MOVING);
 		const BroadPhaseLayerFilter &broadphase_layer_filter = default_broadphase_layer_filter;
 
@@ -87,6 +102,7 @@ namespace JOLT
 			JPH::RMat44::sTranslation(JoltCastFrom),
 			JoltDirection);
 
+		// Actually do the shapecast
 		SphereCastCollector CastCollector(*(physics_system.Get()), ShapeCast);
 		physics_system->GetNarrowPhaseQueryNoLock().CastShape(
 			ShapeCast,
@@ -98,12 +114,21 @@ namespace JOLT
 			body_filter);
 
 		if (CastCollector.mBody) {
-			UE_LOG(LogTemp, Warning, TEXT("SphereCast found a body!"));
-			return GenerateBarrageKeyFromBodyId(CastCollector.mBody->GetID());
-		} else {
-			UE_LOG(LogTemp, Warning, TEXT("SphereCast did not find anything"));
+			// Fill out the hit result, assuming we were passed one
+			if (OutHit.IsValid())
+			{
+				FHitResult* HitResultPtr = OutHit.Get();
+
+				HitResultPtr->MyItem = CastCollector.mBody->GetID().GetIndexAndSequenceNumber();
+				HitResultPtr->bBlockingHit = true;
+
+				FVector3f UnrealContactPos = CoordinateUtils::FromJoltCoordinates(CastCollector.mContactPosition);
+				HitResultPtr->Location.Set(UnrealContactPos.X, UnrealContactPos.Y, UnrealContactPos.Z);
+
+				JPH::Vec3& HitNormal = CastCollector.mContactNormal;
+				HitResultPtr->ImpactNormal.Set(HitNormal.GetX(), HitNormal.GetY(), HitNormal.GetZ());
+			}
 		}
-		return FBarrageKey(0);
 	}
 
 	//we need the coordinate utils, but we don't really want to include them in the .h
@@ -340,10 +365,14 @@ namespace JOLT
 
 	FBarrageKey FWorldSimOwner::GenerateBarrageKeyFromBodyId(const BodyID& Input) const
 	{
-		uint64_t KeyCompose;
-		KeyCompose = PointerHash(this);
+		return GenerateBarrageKeyFromBodyId(Input.GetIndexAndSequenceNumber());
+	}
+
+	FBarrageKey FWorldSimOwner::GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const
+	{
+		uint64_t KeyCompose = PointerHash(this);
 		KeyCompose = KeyCompose << 32;
-		KeyCompose |= Input.GetIndexAndSequenceNumber();
+		KeyCompose |= RawIndexAndSequenceNumberInput;
 		return static_cast<FBarrageKey>(KeyCompose);
 	}
 
