@@ -124,6 +124,7 @@ namespace JOLT
 
 				FVector3f UnrealContactPos = CoordinateUtils::FromJoltCoordinates(CastCollector.mContactPosition);
 				HitResultPtr->Location.Set(UnrealContactPos.X, UnrealContactPos.Y, UnrealContactPos.Z);
+				HitResultPtr->ImpactPoint.Set(UnrealContactPos.X, UnrealContactPos.Y, UnrealContactPos.Z);
 
 				JPH::Vec3& HitNormal = CastCollector.mContactNormal;
 				HitResultPtr->ImpactNormal.Set(HitNormal.GetX(), HitNormal.GetY(), HitNormal.GetZ());
