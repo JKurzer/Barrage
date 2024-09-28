@@ -34,7 +34,7 @@ public:
 	//0 is normal.
 	//1 or more is dead and indicates that the primitive could be released at any time. These should be considered
 	// opaque values as implementation is not final. a primitive is guaranteed to be tombstoned for at least
-	// BarrageDispatch::TombstoneInitialMinimum cycles before it is released, so this can safely be
+	// BarrageDispatch::TOMBSTONE_INITIAL_MINIMUM cycles before it is released, so this can safely be
 	// used in conjunction with null checks to ensure that short tasks can finish safely without
 	// worrying about the exact structure of our lifecycles. it is also used for pool and rollback handling,
 	// and the implementation will change as those come online in artillery.

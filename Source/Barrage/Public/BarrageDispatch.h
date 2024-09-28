@@ -1,6 +1,6 @@
 #pragma once
-#include "SkeletonTypes.h"
 
+#include "SkeletonTypes.h"
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
@@ -22,7 +22,6 @@ enum LayersMap
 
 class BARRAGE_API FBarrageBounder
 {
-	
 	friend class FBBoxParams;
 	friend class FBSphereParams;
 	friend class FBCapParams;
@@ -54,8 +53,6 @@ class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 	static inline constexpr float TickRateInDelta = 1.0 / 120.0;
 	
 public:
-
-
 	uint8 ThreadAccTicker = 0;
 	TSharedPtr<TransformUpdatesForGameThread> GameTransformPump;
 	 //this value indicates you have none.
@@ -70,31 +67,30 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 	virtual void Deinitialize() override;
-
-
+	
 	virtual void SphereCast(FBarrageKey ShapeSource, double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, TSharedPtr<FHitResult> OutHit, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
 	FBLet CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Outkey, uint16 Layer);
 	FBLet CreatePrimitive(FBCharParams& Definition, FSkeletonKey Outkey, uint16 Layer);
 	FBLet CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16 Layer);
 	FBLet CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer);
-	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey);
+	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey) const;
 	FBLet GetShapeRef(FBarrageKey Existing) const;
 	FBLet GetShapeRef(FSkeletonKey Existing) const;
-	void FinalizeReleasePrimitive(FBarrageKey BarrageKey);
+	void FinalizeReleasePrimitive(FBarrageKey BarrageKey) const;
 
 	//any non-zero value is the same, effectively, as a nullity for the purposes of any new operation.
 	//because we can't control certain aspects of timing and because we may need to roll back, we use tombstoning
 	//instead of just reference counting and deleting - this is because cases arise where there MUST be an authoritative
 	//single source answer to the alive/dead question for a rigid body, but we still want all the advantages of ref counting
 	//and we want to be able to revert that decision for faster rollbacks or for pooling purposes.
-	constexpr static uint32 TombstoneInitialMinimum = 9;
+	constexpr static uint32 TOMBSTONE_INITIAL_MINIMUM = 9;
 
-	uint32 SuggestTombstone(const FBLet& Target)
+	uint32 SuggestTombstone(const FBLet& Target) const
 	{
 		if (FBarragePrimitive::IsNotNull(Target))
 		{
-			Target->tombstone = TombstoneInitialMinimum + TombOffset;
+			Target->tombstone = TOMBSTONE_INITIAL_MINIMUM + TombOffset;
 			return Target->tombstone;
 		}
 		return 1;
@@ -102,21 +98,19 @@ public:
 	}
 
 	virtual TStatId GetStatId() const override;
-	TSharedPtr< JOLT::FWorldSimOwner> JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> JoltGameSim;
 
 	//StackUp should be called before stepworld and from the same thread. anything can be done between them.
 	//Returns rather than applies the FBPhysicsInputs that affect Primitives of Types: Character
 	//This list may expand. Failure to handle these will result in catastrophic bugs.
 	void StackUp();
-	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs);
-	bool UpdateCharacter(FBPhysicsInput& CharacterInput);
+	bool UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs) const;
+	bool UpdateCharacter(FBPhysicsInput& CharacterInput) const;
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
 	void StepWorld(uint64 Time);
 
 	FBarrageKey GenerateBarrageKeyFromBodyId(const JPH::BodyID& Input) const;
 	FBarrageKey GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const;
-	
-protected:
 
 private:
 	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleMapping;
@@ -130,21 +124,21 @@ private:
 	//this reserves as little memory as possible, but it could be quite a lot (megs) of reserved memory if you expire
 	//tons and tons of bodies in one frame. if that's a bottleneck for you, you may wish to shorten the tombstone promise
 	//or optimize this for memory better. In general, Barrage and Artillery trade memory for speed and elegance.
-	TSharedPtr<TArray<FBLet>> Tombs[TombstoneInitialMinimum + 1];
+	TSharedPtr<TArray<FBLet>> Tombs[TOMBSTONE_INITIAL_MINIMUM + 1];
 
 	void CleanTombs()
 	{
-		//free tomb at offset - TombstoneInitialMinimum, fulfilling our promised minimum.
-		auto HoldOpen = Tombs;
-		auto& Mausoleum = HoldOpen[(TombOffset - TombstoneInitialMinimum) % (TombstoneInitialMinimum + 1)];
+		//free tomb at offset - TOMBSTONE_INITIAL_MINIMUM, fulfilling our promised minimum.
+		TSharedPtr<TArray<TSharedPtr<FBarragePrimitive>>>* HoldOpen = Tombs;
+		TSharedPtr<TArray<TSharedPtr<FBarragePrimitive>>>& Mausoleum = HoldOpen[(TombOffset - TOMBSTONE_INITIAL_MINIMUM) % (TOMBSTONE_INITIAL_MINIMUM + 1)];
 		if(Mausoleum)
 		{
 			Mausoleum->Empty(); //roast 'em lmao.
 		}
-		TombOffset = (TombOffset + 1) % (TombstoneInitialMinimum + 1);
+		TombOffset = (TombOffset + 1) % (TOMBSTONE_INITIAL_MINIMUM + 1);
 	}
 
-	void Entomb(FBLet NONREFERENCE)
+	void Entomb(const FBLet& NONREFERENCE) const
 	{
 		//request removal here
 		JoltBodyLifecycleMapping->Remove(NONREFERENCE->KeyIntoBarrage);
