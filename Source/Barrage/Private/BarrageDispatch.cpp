@@ -9,7 +9,6 @@
 //https://github.com/GaijinEntertainment/DagorEngine/blob/71a26585082f16df80011e06e7a4e95302f5bb7f/prog/engine/phys/physJolt/joltPhysics.cpp#L800
 //this is how gaijin uses jolt, and war thunder's honestly a pretty strong comp to our use case.
 
-
 void UBarrageDispatch::GrantFeed()
 {
 	FScopeLock GrantFeedLock(&GrowOnlyAccLock);
@@ -34,9 +33,9 @@ UBarrageDispatch::~UBarrageDispatch()
 void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	for (auto& x : Tombs)
+	for (TSharedPtr<TArray<TSharedPtr<FBarragePrimitive>>>& tomb : Tombs)
 	{
-		x = MakeShareable(new TArray<FBLet>());
+		tomb = MakeShareable(new TArray<FBLet>());
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:TransformUpdateQueue: Online"));
@@ -53,9 +52,7 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 
 void UBarrageDispatch::OnWorldBeginPlay(UWorld& InWorld)
 {
-
 	Super::OnWorldBeginPlay(InWorld);
-
 }
 
 void UBarrageDispatch::Deinitialize()
@@ -63,15 +60,17 @@ void UBarrageDispatch::Deinitialize()
 	Super::Deinitialize();
 	JoltBodyLifecycleMapping = nullptr;
 	TranslationMapping = nullptr;
-	for (auto& x : Tombs)
+	
+	for (TSharedPtr<TArray<TSharedPtr<FBarragePrimitive>>>& tomb : Tombs)
 	{
-		x = nullptr;
+		tomb = nullptr;
 	}
-	auto HoldOpen = GameTransformPump;
+
+	TSharedPtr<TCircularQueue<TransformUpdate>> HoldOpen = GameTransformPump;
 	GameTransformPump = nullptr;
 	if (HoldOpen)
 	{
-		auto val = HoldOpen.GetSharedReferenceCount();
+		int32 val = HoldOpen.GetSharedReferenceCount();
 		if (val > 1)
 		{
 			UE_LOG(LogTemp, Warning,
@@ -93,9 +92,9 @@ void UBarrageDispatch::SphereCast(
 	TSharedPtr<FHitResult> OutHit,
 	uint64_t timestamp)
 {
-	auto HoldOpen = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
 	if (HoldOpen) {
-		auto bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
+		JPH::BodyID* bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
 		HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID, OutHit);
 	}
 }
@@ -107,10 +106,10 @@ void UBarrageDispatch::SphereCast(
 //feature. I'm going to wait to refactor the types until testing is complete.
 FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
-	auto HoldOpen = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		FBarrageKey temp = HoldOpen->CreatePrimitive(Definition, Layer);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 	}
 	return FBLet();
@@ -119,10 +118,10 @@ FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Ou
 //TODO: COMPLETE MOCK
 FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
-	auto HoldOpen = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		FBarrageKey temp = HoldOpen->CreatePrimitive(Definition, Layer);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Character);
 	}
 	return FBLet();
@@ -130,10 +129,10 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, FSkeletonKey O
 
 FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
-	auto HoldOpen = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		FBarrageKey temp = HoldOpen->CreatePrimitive(Definition, Layer);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
 	}
 	return FBLet();
@@ -141,10 +140,10 @@ FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey
 
 FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer)
 {
-	auto HoldOpen = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		FBarrageKey temp = HoldOpen->CreatePrimitive(Definition, Layer);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
 	}
 	return FBLet();
@@ -166,12 +165,13 @@ FBLet UBarrageDispatch::ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FB
 //https://github.com/jrouwe/JoltPhysics/blob/master/Samples/Tests/Shapes/MeshShapeTest.cpp
 //probably worth reviewing how indexed triangles work, too : https://www.youtube.com/watch?v=dOjZw5VU6aM
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
-                                              const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey)
+                                              const UStaticMeshComponent* StaticMeshComponent,
+                                              FSkeletonKey Outkey) const
 {
-	auto HoldOpen = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
+		FBLet shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
 		if(shared)
 		{
 			JoltBodyLifecycleMapping->Add(shared->KeyIntoBarrage, shared);
@@ -208,7 +208,7 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 	//that this thoroughfare? it leads into the region of peril.
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
-	auto ref = TranslationMapping->Find(Existing);
+	FBarrageKey* ref = TranslationMapping->Find(Existing);
 	if(ref)
 	{
 		FBLet* deref =  JoltBodyLifecycleMapping->Find(*ref);
@@ -220,15 +220,14 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 	return FBLet();
 }
 
-void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
+void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey) const
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen && JoltGameSim)
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpen = JoltGameSim;
+	if (HoldOpen)
 	{
 		HoldOpen->FinalizeReleasePrimitive(BarrageKey);
 	}
 }
-
 
 TStatId UBarrageDispatch::GetStatId() const
 {
@@ -237,14 +236,14 @@ TStatId UBarrageDispatch::GetStatId() const
 
 void UBarrageDispatch::StackUp()
 {
-	auto WorldSimOwner = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> WorldSimOwner = JoltGameSim;
 	//currently, these are only characters but that could change. This would likely become a TMap then but maybe not.
 	if (WorldSimOwner)
 	{
-		for (auto& x : WorldSimOwner->ThreadAcc)
+		for (JOLT::FWorldSimOwner::FeedMap& SimOwnerFeedMap : WorldSimOwner->ThreadAcc)
 		{
 			TSharedPtr<JOLT::FWorldSimOwner::ThreadFeed> HoldOpen;
-			if (x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
+			if (SimOwnerFeedMap.Queue && ((HoldOpen = SimOwnerFeedMap.Queue)) && SimOwnerFeedMap.That != std::thread::id()) //if there IS a thread.
 			{
 				while (HoldOpen && !HoldOpen->IsEmpty())
 				{
@@ -276,57 +275,56 @@ void UBarrageDispatch::StackUp()
 					}
 					HoldOpen->Dequeue();
 				}
-
 			}
 		}
 	}
 }
 
-bool UBarrageDispatch::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs)
+bool UBarrageDispatch::UpdateCharacters(TSharedPtr<TArray<FBPhysicsInput>> CharacterInputs) const
 {
 	return JoltGameSim->UpdateCharacters(CharacterInputs);
 }
 
-bool UBarrageDispatch::UpdateCharacter(FBPhysicsInput& CharacterInput)
+bool UBarrageDispatch::UpdateCharacter(FBPhysicsInput& CharacterInput) const
 {
 	return JoltGameSim->UpdateCharacter(CharacterInput);
 }
 
 void UBarrageDispatch::StepWorld(uint64 Time)
 {
-	auto HoldOpenWorld = JoltGameSim;
+	TSharedPtr<JOLT::FWorldSimOwner> HoldOpenWorld = JoltGameSim;
 	if (HoldOpenWorld)
 	{
 		JoltGameSim->StepSimulation();
-		auto HoldOpenCharacters = JoltGameSim->CharacterToJoltMapping;
+		TSharedPtr<TMap<FBarrageKey, TSharedPtr<JOLT::FBCharacterBase>>> HoldOpenCharacters = JoltGameSim->CharacterToJoltMapping;
 		if(HoldOpenCharacters)
 		{
-			for(auto x : *HoldOpenCharacters)
+			for(TTuple<FBarrageKey, TSharedPtr<JOLT::FBCharacterBase>> CharacterTuple : *HoldOpenCharacters)
 			{
-				if(x.Value->mCharacter && !x.Value->mCharacter->GetPosition().IsNaN())
+				if(CharacterTuple.Value->mCharacter && !CharacterTuple.Value->mCharacter->GetPosition().IsNaN())
 				{
-					x.Value->StepCharacter();
+					CharacterTuple.Value->StepCharacter();
 				}
-				else if (x.Value->mCharacter)
+				else if (CharacterTuple.Value->mCharacter)
 				{
-					x.Value->mCharacter->SetLinearVelocity(x.Value->World->GetGravity());
-					x.Value->mCharacter->SetPosition(x.Value->mInitialPosition);
-					x.Value->mForcesUpdate = x.Value->World->GetGravity();
-					x.Value->StepCharacter();
+					CharacterTuple.Value->mCharacter->SetLinearVelocity(CharacterTuple.Value->World->GetGravity());
+					CharacterTuple.Value->mCharacter->SetPosition(CharacterTuple.Value->mInitialPosition);
+					CharacterTuple.Value->mForcesUpdate = CharacterTuple.Value->World->GetGravity();
+					CharacterTuple.Value->StepCharacter();
 				}
 			}
 		}
+		
 		//maintain tombstones
 		CleanTombs();
-		auto HoldOpen = JoltBodyLifecycleMapping;
+		TSharedPtr<TMap<FBarrageKey, FBLet>> HoldOpen = JoltBodyLifecycleMapping;
 		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->IsEmpty())
 		{
-			for (auto& x : *HoldOpen)
+			for (TTuple<FBarrageKey, FBLet>& x : *HoldOpen)
 			{
-				auto RefHoldOpen = x.Value;
+				TSharedPtr<FBarragePrimitive> RefHoldOpen = x.Value;
 				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
 				{
-					
 					FBarragePrimitive::TryUpdateTransformFromJolt(x.Value, Time);
 					//returns a bool that can be used for debug.
 				}
@@ -380,6 +378,7 @@ FBCapParams FBarrageBounder::GenerateCapsuleBounds(UE::Geometry::FCapsule3d Caps
 	blob.point = Capsule.Center();
 	blob.JoltRadius = CoordinateUtils::RadiusToJolt(Capsule.Radius);
 	blob.JoltHalfHeightOfCylinder = CoordinateUtils::RadiusToJolt(Capsule.Extent());
+	blob.taper = 0.f;
 	return blob;
 }
 
