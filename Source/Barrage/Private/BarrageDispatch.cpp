@@ -195,9 +195,13 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	//that this thoroughfare? it leads into the region of peril.
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
-	return JoltBodyLifecycleMapping->FindRef(Existing);
+	auto holdopen = JoltBodyLifecycleMapping;
+	if(holdopen)
+	{
+		return holdopen->FindRef(Existing);
+	}
+	return FBLet();
 }
-
 FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 {
 	//SharedPTR's def val is nullptr. this will return nullptr as soon as entomb succeeds.
@@ -208,13 +212,21 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 	//that this thoroughfare? it leads into the region of peril.
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
-	auto ref = TranslationMapping->Find(Existing);
-	if(ref)
+	auto holdopen = TranslationMapping;
+	if(holdopen)
 	{
-		FBLet* deref =  JoltBodyLifecycleMapping->Find(*ref);
-		if(deref && *deref)
+		auto ref = TranslationMapping->Find(Existing);
+		if(ref)
 		{
-			return *deref;
+			auto HoldMapping = JoltBodyLifecycleMapping;
+			if(HoldMapping)
+			{
+				FBLet* deref =  HoldMapping->Find(*ref);
+				if(deref && *deref && FBarragePrimitive::IsNotNull(*deref))
+				{
+					return *deref;
+				}
+			}
 		}
 	}
 	return FBLet();
@@ -326,8 +338,12 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 				auto RefHoldOpen = x.Value;
 				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
 				{
-					
-					FBarragePrimitive::TryUpdateTransformFromJolt(x.Value, Time);
+						FBarragePrimitive::TryUpdateTransformFromJolt(x.Value, Time);
+						if(x.Value->tombstone)
+						{
+							//TODO: MAY NOT BE THREADSAFE. CHECK NLT 10/5/24
+							Entomb(x.Value);
+						}
 					//returns a bool that can be used for debug.
 				}
 			}
