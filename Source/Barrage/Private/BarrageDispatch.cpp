@@ -52,8 +52,9 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	//But limiting this one to 4004 capacity (I just chose a number)
 	ContactEventPump = MakeShareable(new TCircularQueue<BarrageContactEvent>(4004));
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta, MakeShareable<JOLT::BarrageContactListener>(new JOLT::BarrageContactListener(this))));
-	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
-	TranslationMapping = MakeShareable(new TMap<FSkeletonKey, FBarrageKey>());
+	JoltBodyLifecycleMapping = MakeShareable(new KeyToFBLet());
+	TranslationMapping = MakeShareable(new KeyToKey());
+
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
 }
 
@@ -174,14 +175,13 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, FSkeletonKey Ou
 
 FBLet UBarrageDispatch::ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form)
 {
-	//interestingly, you can't use auto here. don't try. it'll allocate a raw pointer internal
-	//and that will get stored in the jolt body lifecycle mapping.
-	//ANY raw pointer in ANY Ttype container is extremely unsafe.
+	//interestingly, you can't use auto here. don't try. it may allocate a raw pointer internal
+	//and that will get stored in the jolt body lifecycle mapping. 
 	//it basically ensures that you will get turned into a pillar of salt.
 	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect->Me = form;
-	JoltBodyLifecycleMapping->Add(indirect->KeyIntoBarrage, indirect);
-	TranslationMapping->Add(indirect->KeyOutOfBarrage, indirect->KeyIntoBarrage);
+	JoltBodyLifecycleMapping->insert_or_assign (indirect->KeyIntoBarrage, indirect);
+	TranslationMapping->insert_or_assign(indirect->KeyOutOfBarrage, indirect->KeyIntoBarrage);
 	return indirect;
 }
 
@@ -196,8 +196,8 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
 		if(shared)
 		{
-			JoltBodyLifecycleMapping->Add(shared->KeyIntoBarrage, shared);
-			TranslationMapping->Add(Outkey, shared->KeyIntoBarrage);
+			JoltBodyLifecycleMapping->insert_or_assign(shared->KeyIntoBarrage, shared);
+			TranslationMapping->insert_or_assign(Outkey, shared->KeyIntoBarrage);
 		}
 		return shared;
 	}
@@ -218,9 +218,11 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	//3) you get a valid shared pointer which will hold the asset open until you're done, but the markings are being set
 	//this means your calls will all succeed but none will be applied during the apply shadow phase.
 	auto holdopen = JoltBodyLifecycleMapping;
-	if(holdopen)
+
+	FBLet out;
+	if(holdopen && holdopen->find(Existing, out))
 	{
-		return holdopen->FindRef(Existing);
+		return out;
 	}
 	return FBLet();
 }
@@ -237,16 +239,17 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 	auto holdopen = TranslationMapping;
 	if(holdopen)
 	{
-		auto ref = TranslationMapping->Find(Existing);
+		FBarrageKey key;
+		auto ref = TranslationMapping->find(Existing, key);
 		if(ref)
 		{
 			auto HoldMapping = JoltBodyLifecycleMapping;
-			if(HoldMapping)
+			FBLet deref;
+			if(HoldMapping->find(key, deref))
 			{
-				FBLet* deref =  HoldMapping->Find(*ref);
-				if(deref && *deref && FBarragePrimitive::IsNotNull(*deref))
+				if(deref && FBarragePrimitive::IsNotNull(deref))
 				{
-					return *deref;
+					return deref;
 				}
 			}
 		}
@@ -257,7 +260,7 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 {
 	auto HoldOpen = JoltGameSim;
-	if (HoldOpen && JoltGameSim)
+	if (HoldOpen)
 	{
 		HoldOpen->FinalizeReleasePrimitive(BarrageKey);
 	}
@@ -353,18 +356,18 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		//maintain tombstones
 		CleanTombs();
 		auto HoldOpen = JoltBodyLifecycleMapping;
-		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->IsEmpty())
+		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->empty())
 		{
-			for (auto& x : *HoldOpen)
+			for (auto& x : HoldOpen->lock_table())
 			{
-				auto RefHoldOpen = x.Value;
-				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
+				;
+				if (x.first.KeyIntoBarrage != 0 && FBarragePrimitive::IsNotNull(x.second))
 				{
-						FBarragePrimitive::TryUpdateTransformFromJolt(x.Value, Time);
-						if(x.Value->tombstone)
+						FBarragePrimitive::TryUpdateTransformFromJolt(x.second, Time);
+						if(x.second->tombstone)
 						{
 							//TODO: MAY NOT BE THREADSAFE. CHECK NLT 10/5/24
-							Entomb(x.Value);
+							Entomb(x.second);
 						}
 					//returns a bool that can be used for debug.
 				}

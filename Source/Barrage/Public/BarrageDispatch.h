@@ -10,6 +10,7 @@
 #include "FBPhysicsInput.h"
 #include "Containers/CircularQueue.h"
 #include "FBShapeParams.h"
+#include "FBarrageMaps.h"
 #include "BarrageContactEvent.h"
 #include "BarrageDispatch.generated.h"
 
@@ -130,9 +131,9 @@ public:
 protected:
 
 private:
-	TSharedPtr<TMap<FBarrageKey, FBLet>> JoltBodyLifecycleMapping;
+	TSharedPtr<KeyToFBLet> JoltBodyLifecycleMapping;
 	
-	TSharedPtr<TMap<FSkeletonKey, FBarrageKey>> TranslationMapping;
+	TSharedPtr<KeyToKey> TranslationMapping;
 	FBLet ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FBarragePrimitive::FBShape form);
 	uint32 TombOffset = 0; //ticks up by one every world step.
 	//this is a little hard to explain. so keys are inserted as 
@@ -155,11 +156,11 @@ private:
 		TombOffset = (TombOffset + 1) % (TombstoneInitialMinimum + 1);
 	}
 
-	void Entomb(FBLet NONREFERENCE)
+	void inline Entomb(FBLet NONREFERENCE)
 	{
 		//request removal here
-		JoltBodyLifecycleMapping->Remove(NONREFERENCE->KeyIntoBarrage);
-		TranslationMapping->Remove(NONREFERENCE->KeyOutOfBarrage);
+		JoltBodyLifecycleMapping->erase(NONREFERENCE->KeyIntoBarrage);
+		TranslationMapping->erase(NONREFERENCE->KeyOutOfBarrage);
 		// there doesn't seem to be a better way to do this idiomatically in the UE framework.
 		//push into tomb here. because we shadow two back on the release, this is guaranteed to be safe?
 		Tombs[TombOffset]->Push(NONREFERENCE);
