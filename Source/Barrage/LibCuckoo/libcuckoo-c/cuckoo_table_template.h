@@ -1,18 +1,15 @@
 // To create an interface instance of the cuckoo table for a certain key-value
 // type, you must define the following constants in your header file:
 //
-#pragma once
 
-#include "FBarrageKey.h"
-#include "SkeletonTypes.h"
 // Name of table
- #define CUCKOO_TABLE_NAME KeyKey
+//#define CUCKOO_TABLE_NAME KeyKey
 //
 // Type of key
-#define CUCKOO_KEY_TYPE FBarrageKey
+//#define CUCKOO_KEY_TYPE FBarrageKey
 //
 // Type of mapped value
-#define CUCKOO_MAPPED_TYPE FSkeletonKey
+//#define CUCKOO_MAPPED_TYPE FSkeletonKey
 //
 // Then, include this template file, which will fill in the interface
 // definition.  If you are including multiple different table interfaces in the

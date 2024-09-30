@@ -6,12 +6,11 @@
 // }
 //
 // Then include this template file
-
+#ifdef SHALLOW_GUARD_BARRAGE_MAPS
 #include <cerrno>
 #include <cstdio>
 #include <memory>
 #include <utility>
-#include <libcuckoo-c/cuckoo_table_template.h>
 #include <libcuckoo/cuckoohash_map.hh>
 
 // Helper macros, we take care of undefining these
@@ -505,3 +504,4 @@ void CUCKOO_CONST_IT(_decrement)(CUCKOO_CONST_ITERATOR *it) { --(it->it); }
 #undef CUCKOO_IT
 #undef CUCKOO_CONST_ITERATOR
 #undef CUCKOO_CONST_IT
+#endif

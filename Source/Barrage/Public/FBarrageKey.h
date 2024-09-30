@@ -12,6 +12,15 @@ struct FBarrageKey
 		//it looks like get type hash can be a 64bit return? 
 		return  FORGE_SKELETON_KEY(GetTypeHash(Other.KeyIntoBarrage), SKELLY::SFIX_BAR_PRIM);
 	}
+
+};
+template<>
+struct std::hash<FBarrageKey>
+{
+	std::size_t operator()(const FBarrageKey& other) const noexcept
+	{
+	return GetTypeHash(other);
+	}
 };
 static bool operator==(FBarrageKey const& lhs, FBarrageKey const& rhs) {
 	return  (lhs.KeyIntoBarrage == rhs.KeyIntoBarrage);
