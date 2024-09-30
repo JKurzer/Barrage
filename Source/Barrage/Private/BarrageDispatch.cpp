@@ -1,4 +1,6 @@
 #include "BarrageDispatch.h"
+
+#include "BarrageContactListener.h"
 #include "IsolatedJoltIncludes.h"
 
 #include "FWorldSimOwner.h"
@@ -45,9 +47,14 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	//this approach may actually be too slow. it is pleasingly lockless, but it allocs 16megs
 	//and just iterating through that could be Rough for the gamethread.
 	//TODO: investigate this thoroughly for perf.
-	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
+
+	//TODO: Oh look we did it again except this time for contact events
+	//But limiting this one to 4004 capacity (I just chose a number)
+	ContactEventPump = MakeShareable(new TCircularQueue<BarrageContactEvent>(4004));
+	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta, MakeShareable<JOLT::BarrageContactListener>(new JOLT::BarrageContactListener(this))));
 	JoltBodyLifecycleMapping = MakeShareable(new KeyToFBLet());
 	TranslationMapping = MakeShareable(new KeyToKey());
+
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
 }
 
@@ -82,6 +89,22 @@ void UBarrageDispatch::Deinitialize()
 		HoldOpen->Empty();
 	}
 	HoldOpen = nullptr;
+
+	auto HoldOpen2 = ContactEventPump;
+	ContactEventPump = nullptr;
+	if (HoldOpen2)
+	{
+		auto val = HoldOpen2.GetSharedReferenceCount();
+		if (val > 1)
+		{
+			UE_LOG(LogTemp, Warning,
+				   TEXT(
+					   "Hey, so something's holding live references to the queue. Maybe. Shared Ref Count is not reliable."
+				   ));
+		}
+		HoldOpen2->Empty();
+	}
+	HoldOpen2 = nullptr;
 }
 
 void UBarrageDispatch::SphereCast(
@@ -105,12 +128,12 @@ void UBarrageDispatch::SphereCast(
 //this is because over time, the needs of these classes may diverge and multiply
 //and it's not clear to me that Shapefulness is going to actually be the defining shared
 //feature. I'm going to wait to refactor the types until testing is complete.
-FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey OutKey, uint16_t Layer, bool isSensor)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer, isSensor);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 	}
 	return FBLet();
@@ -128,23 +151,23 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, FSkeletonKey O
 	return FBLet();
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16_t Layer, bool isSensor)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer, isSensor);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
 	}
 	return FBLet();
 }
 
-FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer)
+FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer, bool isSensor)
 {
 	auto HoldOpen = JoltGameSim;
 	if (HoldOpen)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		auto temp = HoldOpen->CreatePrimitive(Definition, Layer, isSensor);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
 	}
 	return FBLet();
@@ -281,7 +304,7 @@ void UBarrageDispatch::StackUp()
 					else if (input->Action == PhysicsInputType::Velocity)
 					{
 						WorldSimOwner->body_interface->
-						               AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
+						               SetLinearVelocity(*bID, input->State.GetXYZ());
 					}
 					else if (input->Action == PhysicsInputType::SelfMovement)
 					{
@@ -351,6 +374,87 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 			}
 		}
 	}
+}
+
+bool UBarrageDispatch::BroadcastContactEvents()
+{
+	if(GetWorld())
+	{
+		auto HoldOpen = ContactEventPump;
+
+		while(HoldOpen && !HoldOpen->IsEmpty())
+		{
+			auto Update = HoldOpen->Peek();
+			if(Update)
+			{
+				try
+				{
+					switch (Update->ContactEventType)
+					{
+						case EBarrageContactEventType::ADDED:
+							OnBarrageContactAddedDelegate.Broadcast(*Update);
+							break;
+						case EBarrageContactEventType::PERSISTED:
+							OnBarrageContactPersistedDelegate.Broadcast(*Update);
+							break;
+						case EBarrageContactEventType::REMOVED:
+							OnBarrageContactRemovedDelegate.Broadcast(*Update);
+							break;
+					}
+					HoldOpen->Dequeue();
+				}
+				catch (...)
+				{
+					return false; //we'll be back! we'll be back!!!!
+				}
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+inline BarrageContactEvent ConstructContactEvent(EBarrageContactEventType EventType, UBarrageDispatch* BarrageDispatch, const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
+									ContactSettings& ioSettings)
+{
+	auto Body1Let = BarrageDispatch->GetShapeRef(BarrageDispatch->GenerateBarrageKeyFromBodyId(inBody1.GetID()));
+	auto Body2Let = BarrageDispatch->GetShapeRef(BarrageDispatch->GenerateBarrageKeyFromBodyId(inBody2.GetID()));
+
+	return BarrageContactEvent(EventType, BarrageContactEntity(Body1Let->KeyOutOfBarrage, inBody1), BarrageContactEntity(Body2Let->KeyOutOfBarrage, inBody2));
+}
+
+void UBarrageDispatch::HandleContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
+									ContactSettings& ioSettings)
+{
+	if (!JoltBodyLifecycleMapping.IsValid())
+	{
+		return;
+	}
+	
+	auto ContactEventToEnqueue = ConstructContactEvent(EBarrageContactEventType::ADDED, this, inBody1, inBody2, inManifold, ioSettings);
+	ContactEventPump->Enqueue(ContactEventToEnqueue);
+}
+void UBarrageDispatch::HandleContactPersisted(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
+									ContactSettings& ioSettings)
+{
+	if (!JoltBodyLifecycleMapping.IsValid())
+	{
+		return;
+	}
+	auto ContactEventToEnqueue = ConstructContactEvent(EBarrageContactEventType::PERSISTED, this, inBody1, inBody2, inManifold, ioSettings);
+	ContactEventPump->Enqueue(ContactEventToEnqueue);
+}
+void UBarrageDispatch::HandleContactRemoved(const SubShapeIDPair& inSubShapePair)
+{
+	if (!JoltBodyLifecycleMapping.IsValid())
+	{
+		return;
+	}
+	auto Body1Let = this->GetShapeRef(this->GenerateBarrageKeyFromBodyId(inSubShapePair.GetBody1ID()));
+	auto Body2Let = this->GetShapeRef(this->GenerateBarrageKeyFromBodyId(inSubShapePair.GetBody2ID()));
+
+	auto ContactEventToEnqueue = BarrageContactEvent(EBarrageContactEventType::REMOVED, BarrageContactEntity(Body1Let->KeyOutOfBarrage), BarrageContactEntity(Body2Let->KeyOutOfBarrage));
+	ContactEventPump->Enqueue(ContactEventToEnqueue);
 }
 
 FBarrageKey UBarrageDispatch::GenerateBarrageKeyFromBodyId(const JPH::BodyID& Input) const

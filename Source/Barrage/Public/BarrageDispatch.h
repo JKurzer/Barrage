@@ -1,7 +1,6 @@
 #pragma once
 #include "SkeletonTypes.h"
 
-
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "FBarrageKey.h"
@@ -12,14 +11,8 @@
 #include "Containers/CircularQueue.h"
 #include "FBShapeParams.h"
 #include "FBarrageMaps.h"
+#include "BarrageContactEvent.h"
 #include "BarrageDispatch.generated.h"
-
-enum LayersMap
-{
-	NON_MOVING = 0,
-	MOVING = 1,
-	NUM_LAYERS = 2
-};
 
 class BARRAGE_API FBarrageBounder
 {
@@ -37,8 +30,13 @@ public:
 
 namespace JOLT
 {
+	struct BarrageContactEvent;
 	class FWorldSimOwner;
 }
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBarrageContactAdded, const BarrageContactEvent&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBarrageContactPersisted, const BarrageContactEvent&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBarrageContactRemoved, const BarrageContactEvent&);
 
 constexpr int ALLOWED_THREADS_FOR_BARRAGE_PHYSICS =64;
 //if we could make a promise about when threads are allocated, we could probably get rid of this
@@ -59,6 +57,7 @@ public:
 
 	uint8 ThreadAccTicker = 0;
 	TSharedPtr<TransformUpdatesForGameThread> GameTransformPump;
+	TSharedPtr<TCircularQueue<BarrageContactEvent>> ContactEventPump;
 	 //this value indicates you have none.
 	mutable FCriticalSection GrowOnlyAccLock;
 
@@ -75,10 +74,10 @@ public:
 
 	virtual void SphereCast(FBarrageKey ShapeSource, double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, TSharedPtr<FHitResult> OutHit, uint64_t timestamp = 0);
 	//and viola [sic] actually pretty elegant even without type polymorphism by using overloading polymorphism.
-	FBLet CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Outkey, uint16 Layer);
+	FBLet CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Outkey, uint16 Layer, bool IsSensor = false);
 	FBLet CreatePrimitive(FBCharParams& Definition, FSkeletonKey Outkey, uint16 Layer);
-	FBLet CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16 Layer);
-	FBLet CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer);
+	FBLet CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16 Layer, bool IsSensor = false);
+	FBLet CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer, bool IsSensor = false);
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition, const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey);
 	FBLet GetShapeRef(FBarrageKey Existing) const;
 	FBLet GetShapeRef(FSkeletonKey Existing) const;
@@ -113,6 +112,18 @@ public:
 	bool UpdateCharacter(FBPhysicsInput& CharacterInput);
 	//ONLY call this from a thread OTHER than gamethread, or you will experience untold sorrow.
 	void StepWorld(uint64 Time);
+
+	//TODO: oh dear I'm doing the same thing as the TransformQueue... Also probably want to check back on this.
+	bool BroadcastContactEvents();
+	
+	FOnBarrageContactAdded OnBarrageContactAddedDelegate;
+	void HandleContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
+									ContactSettings& ioSettings);
+	FOnBarrageContactPersisted OnBarrageContactPersistedDelegate;
+	void HandleContactPersisted(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
+									ContactSettings& ioSettings);
+	FOnBarrageContactRemoved OnBarrageContactRemovedDelegate;
+	void HandleContactRemoved(const SubShapeIDPair& inSubShapePair);
 
 	FBarrageKey GenerateBarrageKeyFromBodyId(const JPH::BodyID& Input) const;
 	FBarrageKey GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const;
@@ -156,5 +167,4 @@ private:
 		//DO NOT make that a reference parameter
 	}
 };
-
 

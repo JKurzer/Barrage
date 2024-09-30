@@ -167,6 +167,25 @@ FVector3f FBarragePrimitive::GetVelocity(FBLet Target)
 	return FVector3f();
 }
 
+void FBarragePrimitive::SetVelocity(FVector3d Velocity, FBLet Target)
+{
+	if (IsNotNull(Target))
+	{
+		if (GlobalBarrage)
+		{
+			auto HoldOpenGameSim = GlobalBarrage->JoltGameSim;
+			if (HoldOpenGameSim && MyBARRAGEIndex < ALLOWED_THREADS_FOR_BARRAGE_PHYSICS)
+			{
+				HoldOpenGameSim->ThreadAcc[MyBARRAGEIndex].Queue->Enqueue(
+					FBPhysicsInput(Target, 0, PhysicsInputType::Velocity,
+								   CoordinateUtils::ToBarrageVelocity(Velocity)
+					)
+				);
+			}
+		}
+	}
+}
+
 void FBarragePrimitive::ApplyForce(FVector3d Force, FBLet Target)
 {
 	if (IsNotNull(Target))
