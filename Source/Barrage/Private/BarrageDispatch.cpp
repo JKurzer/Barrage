@@ -46,8 +46,8 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	//and just iterating through that could be Rough for the gamethread.
 	//TODO: investigate this thoroughly for perf.
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta));
-	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
-	TranslationMapping = MakeShareable(new TMap<FSkeletonKey, FBarrageKey>());
+	JoltBodyLifecycleMapping = MakeShareable(new KeyToFBLet());
+	TranslationMapping = MakeShareable(new KeyToKey());
 	UE_LOG(LogTemp, Warning, TEXT("Barrage:Subsystem: Online"));
 }
 
@@ -158,8 +158,8 @@ FBLet UBarrageDispatch::ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FB
 	//it basically ensures that you will get turned into a pillar of salt.
 	FBLet indirect = MakeShareable(new FBarragePrimitive(temp, OutKey));
 	indirect->Me = form;
-	JoltBodyLifecycleMapping->Add(indirect->KeyIntoBarrage, indirect);
-	TranslationMapping->Add(indirect->KeyOutOfBarrage, indirect->KeyIntoBarrage);
+	JoltBodyLifecycleMapping->insert_or_assign (indirect->KeyIntoBarrage, indirect);
+	TranslationMapping->insert_or_assign(indirect->KeyOutOfBarrage, indirect->KeyIntoBarrage);
 	return indirect;
 }
 
@@ -174,8 +174,8 @@ FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
 		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
 		if(shared)
 		{
-			JoltBodyLifecycleMapping->Add(shared->KeyIntoBarrage, shared);
-			TranslationMapping->Add(Outkey, shared->KeyIntoBarrage);
+			JoltBodyLifecycleMapping->insert_or_assign(shared->KeyIntoBarrage, shared);
+			TranslationMapping->insert_or_assign(Outkey, shared->KeyIntoBarrage);
 		}
 		return shared;
 	}
@@ -198,7 +198,7 @@ FBLet UBarrageDispatch::GetShapeRef(FBarrageKey Existing) const
 	auto holdopen = JoltBodyLifecycleMapping;
 	if(holdopen)
 	{
-		return holdopen->FindRef(Existing);
+		return holdopen->find(Existing);
 	}
 	return FBLet();
 }
@@ -215,16 +215,17 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 	auto holdopen = TranslationMapping;
 	if(holdopen)
 	{
-		auto ref = TranslationMapping->Find(Existing);
+		auto ref = TranslationMapping->contains(Existing);
 		if(ref)
 		{
+			auto key = TranslationMapping->find(Existing);
 			auto HoldMapping = JoltBodyLifecycleMapping;
-			if(HoldMapping)
+			if(HoldMapping->contains(key))
 			{
-				FBLet* deref =  HoldMapping->Find(*ref);
-				if(deref && *deref && FBarragePrimitive::IsNotNull(*deref))
+				FBLet deref =  HoldMapping->find(key);
+				if(deref && FBarragePrimitive::IsNotNull(deref))
 				{
-					return *deref;
+					return deref;
 				}
 			}
 		}
@@ -331,18 +332,18 @@ void UBarrageDispatch::StepWorld(uint64 Time)
 		//maintain tombstones
 		CleanTombs();
 		auto HoldOpen = JoltBodyLifecycleMapping;
-		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->IsEmpty())
+		if (HoldOpen && HoldOpen.Get() && !HoldOpen.Get()->empty())
 		{
-			for (auto& x : *HoldOpen)
+			for (auto& x : HoldOpen->lock_table())
 			{
-				auto RefHoldOpen = x.Value;
+				auto RefHoldOpen = x.second;
 				if (RefHoldOpen && RefHoldOpen.IsValid() && FBarragePrimitive::IsNotNull(RefHoldOpen))
 				{
-						FBarragePrimitive::TryUpdateTransformFromJolt(x.Value, Time);
-						if(x.Value->tombstone)
+						FBarragePrimitive::TryUpdateTransformFromJolt(RefHoldOpen, Time);
+						if(RefHoldOpen->tombstone)
 						{
 							//TODO: MAY NOT BE THREADSAFE. CHECK NLT 10/5/24
-							Entomb(x.Value);
+							Entomb(RefHoldOpen);
 						}
 					//returns a bool that can be used for debug.
 				}

@@ -9,11 +9,11 @@
 namespace libcuckoo {
 
 //! The default maximum number of keys per bucket
-constexpr size_t DEFAULT_SLOT_PER_BUCKET = 4;
+constexpr size_t DEFAULT_SLOT_PER_BUCKET = 8;
 
 //! The default number of elements in an empty hash table
 constexpr size_t DEFAULT_SIZE =
-    (1U << 16) * DEFAULT_SLOT_PER_BUCKET;
+    (1U << 8) * DEFAULT_SLOT_PER_BUCKET;
 
 //! The default minimum load factor that the table allows for automatic
 //! expansion. It must be a number between 0.0 and 1.0. The table will throw

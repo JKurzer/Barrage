@@ -1,35 +1,14 @@
 ﻿#pragma once
+
+#include "SkeletonTypes.h"
+#include "FBarragePrimitive.h"
+#include "FBarrageKey.h"
 // Do not use these types unless you know exactly what you are doing.
+// Shallow Guard prevents the template files from being evaluated while things are unset.
+// They aren't used while things are set anymore, but the guard format should be observed.
 #define SHALLOW_GUARD_BARRAGE_MAPS
+#include <libcuckoo/cuckoohash_map.hh>
 
-namespace wretched
-{
-	extern "C" {
-		// ReSharper disable once CppUnusedIncludeDirective
-#include "FConcurrentFBletMap.h"
-	}
-	//note the lack of a once guard in the template.cc.
-	//yep. it works the way you think it does.
-#include <libcuckoo-c/cuckoo_table_template.cc>
-}
-typedef wretched::SkelePrim FBarrageToFBlet;
-#undef CUCKOO_TABLE_NAME
-#undef CUCKOO_KEY_TYPE
-#undef CUCKOO_MAPPED_TYPE
-
-namespace OfTheEarth
-{
-	extern "C" {
-		// ReSharper disable once CppUnusedIncludeDirective
-#include "FConcurrentFBKMap.h"
-	}
-	//note the lack of a once guard in the template.cc.
-	//yep. it works the way you think it does.
-#include <libcuckoo-c/cuckoo_table_template.cc>
-}
-typedef OfTheEarth::KeyKey FSkeletonToBarrage;
-
-#undef CUCKOO_TABLE_NAME
-#undef CUCKOO_KEY_TYPE
-#undef CUCKOO_MAPPED_TYPE
+typedef libcuckoo::cuckoohash_map<FSkeletonKey, FBarrageKey> KeyToKey;
+typedef libcuckoo::cuckoohash_map<FBarrageKey, FBLet> KeyToFBLet;
 #undef SHALLOW_GUARD_BARRAGE_MAPS
