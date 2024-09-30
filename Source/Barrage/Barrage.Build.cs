@@ -17,7 +17,14 @@ public class Barrage : ModuleRules
 				Path.Combine(ModuleDirectory,"../JoltPhysics"), // for jolt includes
 			}
 			);
-				
+			
+		PublicIncludePaths.AddRange(
+			new string[] {
+				// ... add public include paths required here ...
+				Path.Combine(ModuleDirectory,"libcuckoo"),
+				Path.Combine(ModuleDirectory,"libcuckoo-c"),// for libcuckoo
+			}
+		);
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {

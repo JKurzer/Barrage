@@ -2,6 +2,7 @@
 // See `int_str_table.cc` for more comments regarding the semantics of creating
 // implementation files for use with C programs.
 
+/*
 extern "C" {
 #include "blob_blob_table.h"
 }
@@ -27,3 +28,4 @@ template <> struct equal_to<key_blob> {
 }
 
 #include <libcuckoo-c/cuckoo_table_template.cc>
+*/
