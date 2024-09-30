@@ -49,8 +49,8 @@ void UBarrageDispatch::Initialize(FSubsystemCollectionBase& Collection)
 	//TODO: investigate this thoroughly for perf.
 
 	//TODO: Oh look we did it again except this time for contact events
-	//But limiting this one to 1000 capacity
-	ContactEventPump = MakeShareable(new TCircularQueue<BarrageContactEvent>(1000));
+	//But limiting this one to 4004 capacity (I just chose a number)
+	ContactEventPump = MakeShareable(new TCircularQueue<BarrageContactEvent>(4004));
 	JoltGameSim = MakeShareable(new JOLT::FWorldSimOwner(TickRateInDelta, MakeShareable<JOLT::BarrageContactListener>(new JOLT::BarrageContactListener(this))));
 	JoltBodyLifecycleMapping = MakeShareable(new TMap<FBarrageKey, FBLet>());
 	TranslationMapping = MakeShareable(new TMap<FSkeletonKey, FBarrageKey>());
