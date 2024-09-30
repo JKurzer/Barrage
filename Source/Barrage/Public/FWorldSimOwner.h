@@ -13,6 +13,7 @@
 #include "FBPhysicsInput.h"
 
 #include "SkeletonTypes.h"
+#include "EPhysicsLayer.h"
 #include "IsolatedJoltIncludes.h"
 
 // All Jolt symbols are in the JPH namespace
@@ -41,19 +42,6 @@ static bool AssertFailedImpl(const char* inExpression, const char* inMessage, co
 
 
 #endif // JPH_ENABLE_ASSERTS
-
-
-// Layer that objects can be in, determines which other objects it can collide with
-// Typically you at least want to have 1 layer for moving bodies and 1 layer for static bodies, but you can have more
-// layers if you want. E.g. you could have a layer for high detail collision (which is not used by the physics simulation
-// but only if you do collision testing).
-namespace Layers
-{
-	static constexpr JPH::ObjectLayer NON_MOVING = 0;
-	static constexpr JPH::ObjectLayer MOVING = 1;
-	static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
-};
-
 
 namespace JOLT
 {
@@ -124,11 +112,22 @@ public:
 		{
 			switch (inObject1)
 			{
+				// TODO: in future if we want to enforce principle of hitbox vs. movement colliders being different,
+				// could force all entities to have both a moving physics shape + a hitbox physics shape and remove collision between MOVING and {PROJECTILE, CAST_QUERY}
 			case Layers::NON_MOVING:
-				return inObject2 == Layers::MOVING; // Non moving only collides with moving
+				return inObject2 != Layers::NON_MOVING && inObject2 != Layers::HITBOX; // Non-moving collides with all moving stuff EXCEPT hitbox
 			case Layers::MOVING:
-				return true; // Moving collides with everything
+				return inObject2 == Layers::NON_MOVING || inObject2 == Layers::MOVING || inObject2 == Layers::PROJECTILE || inObject2 == Layers::CAST_QUERY; // Moving collides with everything but hitboxes and debris
+			case Layers::HITBOX:
+				return inObject2 == Layers::PROJECTILE || inObject2 == Layers::CAST_QUERY; // Hitboxes only collide with projectiles and cast_queries
+			case Layers::PROJECTILE:
+				return inObject2 == Layers::NON_MOVING || inObject2 == Layers::MOVING || inObject2 == Layers::HITBOX || inObject2 == Layers::CAST_QUERY;
+			case Layers::CAST_QUERY:
+				return inObject2 == Layers::NON_MOVING || inObject2 == Layers::MOVING || inObject2 == Layers::HITBOX || inObject2 == Layers::PROJECTILE;
+			case Layers::DEBRIS:
+				return inObject2 == Layers::NON_MOVING; // Debris only hits static non-moving stuff (environment)
 			default:
+				// Jolt is sad you did not define a layer's collision properties :(
 				JPH_ASSERT(false);
 				return false;
 			}
@@ -143,6 +142,10 @@ public:
 			// Create a mapping table from object to broad phase layer
 			mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
 			mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
+			mObjectToBroadPhase[Layers::HITBOX] = BroadPhaseLayers::MOVING;
+			mObjectToBroadPhase[Layers::PROJECTILE]	= BroadPhaseLayers::MOVING;
+			mObjectToBroadPhase[Layers::CAST_QUERY]	= BroadPhaseLayers::MOVING;
+			mObjectToBroadPhase[Layers::DEBRIS]	= BroadPhaseLayers::DEBRIS;
 		}
 
 		virtual uint GetNumBroadPhaseLayers() const override
@@ -163,6 +166,7 @@ public:
 			{
 			case static_cast<BroadPhaseLayer::Type>(BroadPhaseLayers::NON_MOVING): return "NON_MOVING";
 			case static_cast<BroadPhaseLayer::Type>(BroadPhaseLayers::MOVING): return "MOVING";
+			case static_cast<BroadPhaseLayer::Type>(BroadPhaseLayers::DEBRIS): return "DEBRIS";
 			default: JPH_ASSERT(false);
 				return "INVALID";
 			}
@@ -182,9 +186,17 @@ public:
 			switch (inLayer1)
 			{
 			case Layers::NON_MOVING:
-				return inLayer2 == BroadPhaseLayers::MOVING;
+				return inLayer2 != BroadPhaseLayers::NON_MOVING;
 			case Layers::MOVING:
-				return true;
+				return inLayer2 != BroadPhaseLayers::DEBRIS;
+			case Layers::HITBOX:
+				return false;
+			case Layers::PROJECTILE:
+				return inLayer2 != BroadPhaseLayers::DEBRIS;
+			case Layers::CAST_QUERY:
+				return inLayer2 != BroadPhaseLayers::DEBRIS;
+			case Layers::DEBRIS:
+				return inLayer2 == BroadPhaseLayers::NON_MOVING;
 			default:
 				JPH_ASSERT(false);
 				return false;
@@ -207,6 +219,7 @@ public:
 		virtual void OnContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
 		                            ContactSettings& ioSettings) override
 		{
+			
 		}
 
 		virtual void OnContactPersisted(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold,
@@ -274,7 +287,7 @@ public:
 	// A contact listener gets notified when bodies (are about to) collide, and when they separate again.
 	// Note that this is called from a job so whatever you do here needs to be thread safe.
 	// Registering one is entirely optional.
-	TSharedPtr<MyContactListener> contact_listener;
+	TSharedPtr<ContactListener> contact_listener;
 
 	// A body activation listener gets notified when bodies activate and go to sleep
 	// Note that this is called from a job so whatever you do here needs to be thread safe.
@@ -308,7 +321,7 @@ public:
 
 	//do not move this up. see C++ standard ~ 12.6.2
 	TSharedPtr<PhysicsSystem> physics_system;
-	FWorldSimOwner(float cDeltaTime);
+	FWorldSimOwner(float cDeltaTime, TSharedPtr<ContactListener> ContactListener);
 
 	void SphereCast(double Radius, double Distance, FVector3d CastFrom, FVector3d Direction, JPH::BodyID& CastingBody, TSharedPtr<FHitResult> OutHit) const;
 	
@@ -316,10 +329,10 @@ public:
 	//to understand and vastly vastly faster. it's also easier to optimize out allocations, and it's very
 	//very easy to read for people who are probably already drowning in new types.
 	//finally, it allows FBShapeParams to be a POD and so we can reason about it really easily.
-	FBarrageKey CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer);
+	FBarrageKey CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer, bool IsSensor = false);
 	FBarrageKey CreatePrimitive(FBCharParams& ToCreate, uint16 Layer);
-	FBarrageKey CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer);
-	FBarrageKey CreatePrimitive(FBCapParams& ToCreate, uint16 Layer);
+	FBarrageKey CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer, bool IsSensor = false);
+	FBarrageKey CreatePrimitive(FBCapParams& ToCreate, uint16 Layer, bool IsSensor = false);
 
 	FBLet LoadComplexStaticMesh(FBMeshParams& Definition,
 		const UStaticMeshComponent* StaticMeshComponent,

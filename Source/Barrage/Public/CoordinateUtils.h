@@ -20,12 +20,18 @@ public:
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
 	static inline JPH::Quat ToBarrageForce(FVector3d In)
 	{
-		return JPH::Quat(In.X/100.0, In.Z/100.0, In.Y/100.0, 1); //reverse is 0,2,1
+		return JPH::Quat(In.X, In.Z, In.Y, 1); //reverse is 0,2,1
 	};
 	//we store forces and rotations both in 4d vecs to allow better memory locality.
 	static inline JPH::Quat ToBarrageRotation(FQuat4d In)
 	{
 		return ToJoltRotation(In);
+	};
+	//we store velocity and rotations both in 4d vecs to allow better memory locality.
+	// This one requires a unit conversion unlike force since force is newtons
+	static inline JPH::Quat ToBarrageVelocity(FVector3d In)
+	{
+		return JPH::Quat(In.X/100.0, In.Z/100.0, In.Y/100.0, 1); //reverse is 0,2,1
 	};
 	
 	static inline JPH::Float3 ToJoltCoordinates( const Chaos::TVector<float, 3> In)
