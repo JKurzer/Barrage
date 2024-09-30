@@ -374,7 +374,7 @@ namespace JOLT
 		uint64_t KeyCompose = PointerHash(this);
 		KeyCompose = KeyCompose << 32;
 		KeyCompose |= RawIndexAndSequenceNumberInput;
-		return static_cast<FBarrageKey>(KeyCompose);
+		return FBarrageKey(KeyCompose);
 	}
 
 	FWorldSimOwner::~FWorldSimOwner()

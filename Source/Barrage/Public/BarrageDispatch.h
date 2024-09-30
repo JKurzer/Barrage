@@ -145,7 +145,7 @@ private:
 		TombOffset = (TombOffset + 1) % (TombstoneInitialMinimum + 1);
 	}
 
-	void Entomb(FBLet NONREFERENCE)
+	void inline Entomb(FBLet NONREFERENCE)
 	{
 		//request removal here
 		JoltBodyLifecycleMapping->erase(NONREFERENCE->KeyIntoBarrage);

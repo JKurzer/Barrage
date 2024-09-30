@@ -7,6 +7,15 @@
 struct FBarrageKey
 {	
 	uint64 KeyIntoBarrage;
+	FBarrageKey()
+	{
+		KeyIntoBarrage = 0;
+	}
+
+	FBarrageKey(uint64_t key)
+	{
+		KeyIntoBarrage = key;
+	}
 	friend uint64 GetTypeHash(const FBarrageKey& Other)
 	{
 		//it looks like get type hash can be a 64bit return? 
