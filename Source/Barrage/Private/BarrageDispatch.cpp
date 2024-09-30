@@ -1,6 +1,5 @@
 #include "BarrageDispatch.h"
 
-#include "AITestsCommon.h"
 #include "BarrageContactListener.h"
 #include "IsolatedJoltIncludes.h"
 
