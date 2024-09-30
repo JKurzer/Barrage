@@ -7,7 +7,7 @@
 
 namespace JOLT
 {
-	FWorldSimOwner::FWorldSimOwner(float cDeltaTime)
+	FWorldSimOwner::FWorldSimOwner(float cDeltaTime, TSharedPtr<ContactListener> ContactListener)
 	{
 		DeltaTime = cDeltaTime;
 		// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
@@ -15,7 +15,7 @@ namespace JOLT
 		BarrageToJoltMapping = MakeShareable(new TMap<FBarrageKey, BodyID>());
 		CharacterToJoltMapping = MakeShareable(new TMap<FBarrageKey, TSharedPtr<FBCharacterBase>>());
 		RegisterDefaultAllocator();
-		contact_listener = MakeShareable(new MyContactListener());
+		contact_listener = ContactListener;
 		body_activation_listener = MakeShareable(new MyBodyActivationListener());
 		Allocator = MakeShareable(new TempAllocatorImpl(AllocationArenaSize));
 		physics_system = MakeShareable(new PhysicsSystem());
@@ -77,10 +77,10 @@ namespace JOLT
 		OutHit->MyItem = JPH::BodyID::cInvalidBodyID;
 
 		// Set up shape cast settings
-		const DefaultBroadPhaseLayerFilter default_broadphase_layer_filter = physics_system->GetDefaultBroadPhaseLayerFilter(Layers::MOVING);
+		const DefaultBroadPhaseLayerFilter default_broadphase_layer_filter = physics_system->GetDefaultBroadPhaseLayerFilter(Layers::CAST_QUERY);
 		const BroadPhaseLayerFilter &broadphase_layer_filter = default_broadphase_layer_filter;
 
-		const DefaultObjectLayerFilter default_object_layer_filter = physics_system->GetDefaultLayerFilter(Layers::MOVING);
+		const DefaultObjectLayerFilter default_object_layer_filter = physics_system->GetDefaultLayerFilter(Layers::CAST_QUERY);
 		const ObjectLayerFilter &object_layer_filter = default_object_layer_filter;
 
 		const IgnoreSingleBodyFilter default_body_filter(CastingBody);
@@ -132,12 +132,34 @@ namespace JOLT
 		}
 	}
 
+	inline EMotionType LayerToMotionTypeMapping(uint16 Layer)
+	{
+		switch (Layer)
+		{
+		case Layers::NON_MOVING:
+			return EMotionType::Static;
+		case Layers::MOVING:
+			return EMotionType::Dynamic;
+		case Layers::HITBOX:
+			return EMotionType::Kinematic;
+		case Layers::PROJECTILE:
+			return EMotionType::Dynamic;
+		case Layers::CAST_QUERY:
+			return EMotionType::Kinematic;
+		case Layers::DEBRIS:
+			return EMotionType::Dynamic;
+		default:
+			JPH_ASSERT(false);
+			return EMotionType::Static;
+		}
+	}
+
 	//we need the coordinate utils, but we don't really want to include them in the .h
-	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer)
+	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBBoxParams& ToCreate, uint16 Layer, bool IsSensor)
 	{
 
 		BodyID BodyIDTemp = BodyID();
-		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
+		EMotionType MovementType = LayerToMotionTypeMapping(Layer);
 
 		Ref<Shape> box_settings = new BoxShape(Vec3(ToCreate.JoltX, ToCreate.JoltY, ToCreate.JoltZ));
 		//floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
@@ -152,6 +174,7 @@ namespace JOLT
 		                                       Quat::sIdentity(),
 		                                       MovementType,
 		                                       Layer);
+		box_body_settings.mIsSensor = IsSensor;
 		// Create the actual rigid body
 		Body* box_body = body_interface->CreateBody(box_body_settings);
 		// Note that if we run out of bodies this can return nullptr
@@ -171,7 +194,7 @@ namespace JOLT
 	{
 
 		BodyID BodyIDTemp = BodyID();
-		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
+		EMotionType MovementType = LayerToMotionTypeMapping(Layer);
 		TSharedPtr<FBCharacter> NewCharacter = MakeShareable<FBCharacter>(new FBCharacter);
 		NewCharacter->mHeightStanding = 2 * ToCreate.JoltHalfHeightOfCylinder;
 		NewCharacter->mRadiusStanding = ToCreate.JoltRadius;
@@ -195,17 +218,18 @@ namespace JOLT
 		return FBK;
 	}
 
-	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer)
+	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBSphereParams& ToCreate, uint16 Layer, bool IsSensor)
 	{
 
 		BodyID BodyIDTemp = BodyID();
-		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
+		EMotionType MovementType = LayerToMotionTypeMapping(Layer);
 
 		BodyCreationSettings sphere_settings(new SphereShape(ToCreate.JoltRadius),
 		                                     CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
 		                                     Quat::sIdentity(),
 		                                     MovementType,
 		                                     Layer);
+		sphere_settings.mIsSensor = IsSensor;
 		BodyIDTemp = body_interface->CreateAndAddBody(sphere_settings, EActivation::Activate);
 
 		auto FBK = GenerateBarrageKeyFromBodyId(BodyIDTemp);
@@ -214,15 +238,16 @@ namespace JOLT
 		return FBK;
 	}
 
-	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBCapParams& ToCreate, uint16 Layer)
+	inline FBarrageKey FWorldSimOwner::CreatePrimitive(FBCapParams& ToCreate, uint16 Layer, bool IsSensor)
 	{
 		BodyID BodyIDTemp = BodyID();
-		EMotionType MovementType = Layer == 0 ? EMotionType::Static : EMotionType::Dynamic;
+		EMotionType MovementType = LayerToMotionTypeMapping(Layer);
 		BodyCreationSettings cap_settings(new CapsuleShape(ToCreate.JoltHalfHeightOfCylinder, ToCreate.JoltRadius),
 		                                  CoordinateUtils::ToJoltCoordinates(ToCreate.point.GridSnap(1)),
 		                                  Quat::sIdentity(),
 		                                  MovementType,
 		                                  Layer);
+		cap_settings.mIsSensor = IsSensor;
 		BodyIDTemp = body_interface->CreateAndAddBody(cap_settings, EActivation::Activate);
 		auto FBK = GenerateBarrageKeyFromBodyId(BodyIDTemp);
 		//Barrage key is unique to WORLD and BODY. This is crushingly important.

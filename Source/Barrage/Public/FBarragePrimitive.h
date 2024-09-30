@@ -58,7 +58,9 @@ public:
 	//By and at large, these are static so that they can interact with FBLets, instead of the bare primitive. We don't
 	//really want to ever encourage people to use those.
 	//-------------------------------
-	
+
+		//immediately sets the velocity of object to given velocity vector
+		static void SetVelocity(FVector3d Velocity, FBLet Target);
 		//transform forces transparently from UE world space to jolt world space
 		//then apply them directly to the "primitive"
 		static void ApplyForce(FVector3d Force, FBLet Target);

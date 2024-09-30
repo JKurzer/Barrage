@@ -109,7 +109,8 @@ void JOLT::FBCharacter::IngestUpdate(FBPhysicsInput& input)
 	}
 	else if (input.Action == PhysicsInputType::OtherForce)
 	{
-		mForcesUpdate += input.State.GetXYZ();
+		// TODO: IDK this is a kludge for now since we removed the 100.0 divide by in CoordinateUtils::ToBarrageForce
+		mForcesUpdate += input.State.GetXYZ() / 100.0;
 	}
 	else if (input.Action == PhysicsInputType::Velocity || input.Action == PhysicsInputType::SelfMovement)
 	{
