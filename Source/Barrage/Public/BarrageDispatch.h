@@ -51,7 +51,7 @@ class BARRAGE_API UBarrageDispatch : public UTickableWorldSubsystem
 	GENERATED_BODY()
 	friend class JOLT::FWorldSimOwner;
 	static inline constexpr float TickRateInDelta = 1.0 / 120.0;
-	
+
 public:
 
 

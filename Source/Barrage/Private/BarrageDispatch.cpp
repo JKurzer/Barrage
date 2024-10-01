@@ -116,11 +116,10 @@ void UBarrageDispatch::SphereCast(
 	TSharedPtr<FHitResult> OutHit,
 	uint64_t timestamp)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen) {
-		auto bodyID = HoldOpen->BarrageToJoltMapping->Find(ShapeSource);
-		HoldOpen->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID, OutHit);
-	}
+
+		auto bodyID = JoltGameSim->BarrageToJoltMapping->Find(ShapeSource);
+		JoltGameSim->SphereCast(Radius, Distance, CastFrom, Direction, *bodyID, OutHit);
+	
 }
 
 //Defactoring the pointer management has actually made this much clearer than I expected.
@@ -130,10 +129,9 @@ void UBarrageDispatch::SphereCast(
 //feature. I'm going to wait to refactor the types until testing is complete.
 FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey OutKey, uint16_t Layer, bool isSensor)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen)
+	if (JoltGameSim)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer, isSensor);
+		auto temp = JoltGameSim->CreatePrimitive(Definition, Layer, isSensor);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Box);
 	}
 	return FBLet();
@@ -142,10 +140,10 @@ FBLet UBarrageDispatch::CreatePrimitive(FBBoxParams& Definition, FSkeletonKey Ou
 //TODO: COMPLETE MOCK
 FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, FSkeletonKey OutKey, uint16_t Layer)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen)
+
+	if (JoltGameSim)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer);
+		auto temp = JoltGameSim->CreatePrimitive(Definition, Layer);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Character);
 	}
 	return FBLet();
@@ -153,10 +151,10 @@ FBLet UBarrageDispatch::CreatePrimitive(FBCharParams& Definition, FSkeletonKey O
 
 FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey OutKey, uint16_t Layer, bool isSensor)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen)
+
+	if (JoltGameSim)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer, isSensor);
+		auto temp = JoltGameSim->CreatePrimitive(Definition, Layer, isSensor);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Sphere);
 	}
 	return FBLet();
@@ -164,10 +162,9 @@ FBLet UBarrageDispatch::CreatePrimitive(FBSphereParams& Definition, FSkeletonKey
 
 FBLet UBarrageDispatch::CreatePrimitive(FBCapParams& Definition, FSkeletonKey OutKey, uint16 Layer, bool isSensor)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen)
+	if (JoltGameSim)
 	{
-		auto temp = HoldOpen->CreatePrimitive(Definition, Layer, isSensor);
+		auto temp = JoltGameSim->CreatePrimitive(Definition, Layer, isSensor);
 		return ManagePointers(OutKey, temp, FBarragePrimitive::Capsule);
 	}
 	return FBLet();
@@ -190,10 +187,10 @@ FBLet UBarrageDispatch::ManagePointers(FSkeletonKey OutKey, FBarrageKey temp, FB
 FBLet UBarrageDispatch::LoadComplexStaticMesh(FBMeshParams& Definition,
                                               const UStaticMeshComponent* StaticMeshComponent, FSkeletonKey Outkey)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen)
+
+	if (JoltGameSim)
 	{
-		auto shared = HoldOpen->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
+		auto shared = JoltGameSim->LoadComplexStaticMesh(Definition, StaticMeshComponent, Outkey);
 		if(shared)
 		{
 			JoltBodyLifecycleMapping->insert_or_assign(shared->KeyIntoBarrage, shared);
@@ -259,10 +256,9 @@ FBLet UBarrageDispatch::GetShapeRef(FSkeletonKey Existing) const
 
 void UBarrageDispatch::FinalizeReleasePrimitive(FBarrageKey BarrageKey)
 {
-	auto HoldOpen = JoltGameSim;
-	if (HoldOpen)
+	if (JoltGameSim)
 	{
-		HoldOpen->FinalizeReleasePrimitive(BarrageKey);
+		JoltGameSim->FinalizeReleasePrimitive(BarrageKey);
 	}
 }
 
@@ -274,11 +270,11 @@ TStatId UBarrageDispatch::GetStatId() const
 
 void UBarrageDispatch::StackUp()
 {
-	auto WorldSimOwner = JoltGameSim;
+
 	//currently, these are only characters but that could change. This would likely become a TMap then but maybe not.
-	if (WorldSimOwner)
+	if (JoltGameSim)
 	{
-		for (auto& x : WorldSimOwner->ThreadAcc)
+		for (auto& x : JoltGameSim->ThreadAcc)
 		{
 			TSharedPtr<JOLT::FWorldSimOwner::ThreadFeed> HoldOpen;
 			if (x.Queue && ((HoldOpen = x.Queue)) && x.That != std::thread::id()) //if there IS a thread.
@@ -286,7 +282,7 @@ void UBarrageDispatch::StackUp()
 				while (HoldOpen && !HoldOpen->IsEmpty())
 				{
 					auto input = HoldOpen->Peek();
-					auto bID = WorldSimOwner->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
+					auto bID = JoltGameSim->BarrageToJoltMapping->Find(input->Target->KeyIntoBarrage);
 					if (input->Target->Me == FBarragePrimitive::Character)
 					{
 						UpdateCharacter(const_cast<FBPhysicsInput&>(*input));
@@ -294,21 +290,21 @@ void UBarrageDispatch::StackUp()
 					else if (input->Action == PhysicsInputType::Rotation)
 					{
 						//prolly gonna wanna change this to add torque................... not sure.
-						WorldSimOwner->body_interface->SetRotation(*bID, input->State, JPH::EActivation::Activate);
+						JoltGameSim->body_interface->SetRotation(*bID, input->State, JPH::EActivation::Activate);
 					}
 					else if (input->Action == PhysicsInputType::OtherForce)
 					{
-						WorldSimOwner->body_interface->
+						JoltGameSim->body_interface->
 						               AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					else if (input->Action == PhysicsInputType::Velocity)
 					{
-						WorldSimOwner->body_interface->
+						JoltGameSim->body_interface->
 						               SetLinearVelocity(*bID, input->State.GetXYZ());
 					}
 					else if (input->Action == PhysicsInputType::SelfMovement)
 					{
-						WorldSimOwner->body_interface->
+						JoltGameSim->body_interface->
 						               AddForce(*bID, input->State.GetXYZ(), JPH::EActivation::Activate);
 					}
 					HoldOpen->Dequeue();
@@ -331,8 +327,7 @@ bool UBarrageDispatch::UpdateCharacter(FBPhysicsInput& CharacterInput)
 
 void UBarrageDispatch::StepWorld(uint64 Time)
 {
-	auto HoldOpenWorld = JoltGameSim;
-	if (HoldOpenWorld)
+	if (JoltGameSim)
 	{
 		JoltGameSim->StepSimulation();
 		auto HoldOpenCharacters = JoltGameSim->CharacterToJoltMapping;
