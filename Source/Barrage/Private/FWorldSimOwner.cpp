@@ -417,11 +417,7 @@ namespace JOLT
 		auto& magic = physics_system->GetBodyLockInterface();
 		physics_system.Reset(); //cast it into the fire.
 		std::this_thread::yield(); //Cycle.
-
-		magic.LockWrite(magic.GetAllBodiesMutexMask());
-		//lock it down. all write access to the physics engine passes through this.
 		HoldOpen.Reset();
-		magic.UnlockWrite(magic.GetAllBodiesMutexMask());
 		job_system.Reset();
 		Allocator.Reset();
 	}
