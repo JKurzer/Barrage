@@ -127,6 +127,12 @@ public:
 
 	FBarrageKey GenerateBarrageKeyFromBodyId(const JPH::BodyID& Input) const;
 	FBarrageKey GenerateBarrageKeyFromBodyId(const uint32 RawIndexAndSequenceNumberInput) const;
+
+	FBarrageKey GetBarrageKeyFromFHitResult(TSharedPtr<FHitResult> HitResult) const
+	{
+		check(HitResult.IsValid());
+		return HitResult.Get()->MyItem != JPH::BodyID::cInvalidBodyID ? GenerateBarrageKeyFromBodyId(static_cast<uint32>(HitResult.Get()->MyItem)) : 0;
+	}
 	
 protected:
 
